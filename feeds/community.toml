@@ -1,0 +1,32 @@
+# Community SketchyBar plugin index for macmgr.
+# Pull: `macmgr catalog pull`
+# Add your own feed URL: `macmgr catalog feed-add https://…/catalog.toml`
+
+[[plugins]]
+id = "clock"
+label = "Simple clock"
+kind = "widget"
+description = "Shows HH:MM, updates every minute"
+source = "builtin:clock"
+
+[[plugins]]
+id = "spacer"
+label = "Spacer"
+kind = "item"
+description = "Empty padding item"
+source = "builtin:spacer"
+
+[[plugins]]
+id = "uptime"
+label = "Uptime"
+kind = "widget"
+description = "Host uptime via `uptime`"
+source = "builtin:uptime"
+
+[[plugins]]
+id = "hello"
+label = "Hello label"
+kind = "widget"
+description = "Minimal demo widget from community feed"
+source = "builtin:clock"
+path = ""

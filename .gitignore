@@ -1,0 +1,8 @@
+.idea/
+/target/
+**/*.rs.bk
+.DS_Store
+*.swp
+.env
+shell/.config/sketchybar/helpers/**/bin/
+shell/.config/sketchybar/**/*.macmgr.bak

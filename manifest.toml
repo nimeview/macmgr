@@ -1,0 +1,416 @@
+name = "Arthur Rice"
+version = "1.0.0"
+description = "yabai + skhd + SketchyBar + borders tiling desktop rice"
+
+# My rice mirror (LIVE ↔ selective sync / publish). Not Felix upstream.
+[rice]
+path = "~/.local/share/macmgr/rice"
+git_url = ""
+strategy = "copy" # copy | symlink when planting LIVE from rice
+
+[paths]
+config_home = "~/.config"
+wallpaper_dir = "~/Wallpaper"
+backup_dir = "~/.local/share/macmgr/backups"
+ensure_spaces = "~/bin/ensure_spaces.sh"
+
+[[taps]]
+name = "FelixKratz/formulae"
+
+[[taps]]
+name = "koekeishiya/formulae"
+
+[[services]]
+id = "yabai"
+brew = "yabai"
+label = "com.asmvik.yabai"
+core = true
+control = "native"
+
+[[services]]
+id = "skhd"
+brew = "skhd"
+label = "com.koekeishiya.skhd"
+core = true
+control = "native"
+
+[[services]]
+id = "sketchybar"
+brew = "sketchybar"
+label = "homebrew.mxcl.sketchybar"
+core = true
+control = "brew"
+
+[[services]]
+id = "borders"
+brew = "borders"
+label = "homebrew.mxcl.borders"
+core = true
+control = "brew"
+
+[[services]]
+id = "svim"
+brew = "svim"
+label = "homebrew.mxcl.svim"
+core = false
+control = "brew"
+
+[[packages]]
+name = "yabai"
+kind = "formula"
+group = "core"
+core = true
+
+[[packages]]
+name = "skhd"
+kind = "formula"
+group = "core"
+core = true
+
+[[packages]]
+name = "sketchybar"
+kind = "formula"
+group = "core"
+core = true
+
+[[packages]]
+name = "borders"
+kind = "formula"
+group = "core"
+core = true
+
+[[packages]]
+name = "svim"
+kind = "formula"
+group = "core"
+core = false
+
+[[packages]]
+name = "wget"
+kind = "formula"
+group = "essentials"
+
+[[packages]]
+name = "jq"
+kind = "formula"
+group = "essentials"
+
+[[packages]]
+name = "ripgrep"
+kind = "formula"
+group = "essentials"
+
+[[packages]]
+name = "mas"
+kind = "formula"
+group = "essentials"
+
+[[packages]]
+name = "gh"
+kind = "formula"
+group = "essentials"
+
+[[packages]]
+name = "ifstat"
+kind = "formula"
+group = "essentials"
+
+[[packages]]
+name = "switchaudio-osx"
+kind = "formula"
+group = "essentials"
+
+[[packages]]
+name = "neovim"
+kind = "formula"
+group = "terminal"
+
+[[packages]]
+name = "helix"
+kind = "formula"
+group = "terminal"
+
+[[packages]]
+name = "starship"
+kind = "formula"
+group = "terminal"
+
+[[packages]]
+name = "zsh-autosuggestions"
+kind = "formula"
+group = "terminal"
+
+[[packages]]
+name = "zsh-fast-syntax-highlighting"
+kind = "formula"
+group = "terminal"
+
+[[packages]]
+name = "zoxide"
+kind = "formula"
+group = "terminal"
+
+[[packages]]
+name = "btop"
+kind = "formula"
+group = "nice"
+
+[[packages]]
+name = "lazygit"
+kind = "formula"
+group = "nice"
+
+[[packages]]
+name = "lulu"
+kind = "formula"
+group = "nice"
+
+[[packages]]
+name = "wireguard-go"
+kind = "formula"
+group = "nice"
+
+[[packages]]
+name = "dooit"
+kind = "formula"
+group = "nice"
+
+[[packages]]
+name = "kitty"
+kind = "cask"
+group = "apps"
+
+[[packages]]
+name = "alacritty"
+kind = "cask"
+group = "apps"
+
+[[packages]]
+name = "orion"
+kind = "cask"
+group = "apps"
+
+[[packages]]
+name = "alfred"
+kind = "cask"
+group = "apps"
+
+[[packages]]
+name = "vlc"
+kind = "cask"
+group = "apps"
+
+[[packages]]
+name = "spotify"
+kind = "cask"
+group = "apps"
+
+[[packages]]
+name = "sf-symbols"
+kind = "cask"
+group = "fonts"
+
+[[packages]]
+name = "font-sf-mono"
+kind = "cask"
+group = "fonts"
+
+[[packages]]
+name = "font-sf-pro"
+kind = "cask"
+group = "fonts"
+
+[[packages]]
+name = "font-hack-nerd-font"
+kind = "cask"
+group = "fonts"
+
+[[packages]]
+name = "font-jetbrains-mono"
+kind = "cask"
+group = "fonts"
+
+[[packages]]
+name = "font-fira-code"
+kind = "cask"
+group = "fonts"
+
+[[packages]]
+name = "mactex"
+kind = "formula"
+group = "optional"
+optional = true
+
+[[packages]]
+name = "hdf5"
+kind = "formula"
+group = "optional"
+optional = true
+
+[[packages]]
+name = "gnuplot"
+kind = "formula"
+group = "optional"
+optional = true
+
+[[packages]]
+name = "texlab"
+kind = "formula"
+group = "optional"
+optional = true
+
+[[configs]]
+id = "yabai"
+label = "yabai"
+path = "~/.config/yabai/yabairc"
+repo_path = "~/.local/share/macmgr/rice/.config/yabai/yabairc"
+kind = "file"
+managed = true
+
+[[configs]]
+id = "skhd"
+label = "skhd"
+path = "~/.config/skhd/skhdrc"
+repo_path = "~/.local/share/macmgr/rice/.config/skhd/skhdrc"
+kind = "file"
+managed = true
+
+[[configs]]
+id = "sketchybar"
+label = "SketchyBar (live)"
+path = "~/.config/sketchybar"
+repo_path = "~/.local/share/macmgr/rice/.config/sketchybar"
+kind = "dir"
+managed = true
+
+[[configs]]
+id = "borders"
+label = "borders"
+path = "~/.config/borders/bordersrc"
+repo_path = "~/.local/share/macmgr/rice/.config/borders/bordersrc"
+kind = "file"
+managed = true
+
+[[configs]]
+id = "kitty"
+label = "kitty"
+path = "~/.config/kitty"
+repo_path = "~/.local/share/macmgr/rice/.config/kitty"
+kind = "dir"
+managed = true
+
+[[configs]]
+id = "helix"
+label = "helix"
+path = "~/.config/helix"
+repo_path = "~/.local/share/macmgr/rice/.config/helix"
+kind = "dir"
+managed = true
+
+[[configs]]
+id = "starship"
+label = "starship"
+path = "~/.config/starship.toml"
+repo_path = "~/.local/share/macmgr/rice/.config/starship.toml"
+kind = "file"
+managed = true
+
+[[configs]]
+id = "zsh"
+label = "zshrc"
+path = "~/.zshrc"
+repo_path = "~/.local/share/macmgr/rice/.zshrc"
+kind = "file"
+managed = true
+
+[[configs]]
+id = "tmux"
+label = "tmux"
+path = "~/.tmux.conf"
+repo_path = "~/.local/share/macmgr/rice/.tmux.conf"
+kind = "file"
+managed = true
+
+[[defaults]]
+id = "dock-autohide"
+domain = "com.apple.dock"
+key = "autohide"
+value = "true"
+type = "bool"
+core = true
+
+[[defaults]]
+id = "hide-menubar"
+domain = "NSGlobalDomain"
+key = "_HIHideMenuBar"
+value = "true"
+type = "bool"
+core = true
+
+[[defaults]]
+id = "show-extensions"
+domain = "NSGlobalDomain"
+key = "AppleShowAllExtensions"
+value = "true"
+type = "bool"
+core = true
+
+[[defaults]]
+id = "key-repeat"
+domain = "NSGlobalDomain"
+key = "KeyRepeat"
+value = "1"
+type = "int"
+core = true
+
+[[defaults]]
+id = "disable-window-anim"
+domain = "NSGlobalDomain"
+key = "NSAutomaticWindowAnimationsEnabled"
+value = "false"
+type = "bool"
+core = true
+
+[[defaults]]
+id = "finder-show-all"
+domain = "com.apple.Finder"
+key = "AppleShowAllFiles"
+value = "true"
+type = "bool"
+core = true
+
+[[presets]]
+id = "compact"
+label = "Compact"
+padding = 4
+gap = 6
+opacity = 0.85
+
+[[presets]]
+id = "comfortable"
+label = "Comfortable"
+padding = 8
+gap = 10
+opacity = 0.80
+
+[[presets]]
+id = "spacious"
+label = "Spacious"
+padding = 16
+gap = 16
+opacity = 0.90
+
+[[post_install]]
+id = "sbarlua"
+label = "Install SbarLua"
+command = "curl -L https://raw.githubusercontent.com/FelixKratz/SbarLua/main/install.sh | sh"
+
+[[post_install]]
+id = "sketchybar_font"
+label = "Install sketchybar-app-font"
+command = "curl -L https://github.com/kvndrsslr/sketchybar-app-font/releases/download/v2.0.28/sketchybar-app-font.ttf -o \"$HOME/Library/Fonts/sketchybar-app-font.ttf\""
+
+[[post_install]]
+id = "ensure_spaces"
+label = "Ensure yabai spaces"
+command = "test -x \"$HOME/bin/ensure_spaces.sh\" && \"$HOME/bin/ensure_spaces.sh\" || true"

@@ -1,0 +1,29 @@
+[package]
+name = "macmgr"
+version = "0.1.0"
+edition = "2021"
+description = "TUI/CLI manager for a macOS yabai/skhd/SketchyBar rice"
+license = "MIT"
+authors = ["Artur Panan"]
+
+[[bin]]
+name = "macmgr"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+clap = { version = "4", features = ["derive"] }
+crossterm = "0.28"
+directories = "5"
+indicatif = "0.17"
+ratatui = "0.29"
+serde = { version = "1", features = ["derive"] }
+thiserror = "1"
+toml = "0.8"
+walkdir = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
