@@ -1,5 +1,5 @@
--- Center media player with full popup (controls + scrubber).
--- Stays visible while paused; hides only when nothing is loaded.
+-- Center media player: cover | artist — title · time
+-- Popup: horizontal controls + working scrubber ($PERCENTAGE).
 -- Requires: brew install nowplaying-cli
 local icons = require("icons")
 local colors = require("colors")
@@ -14,62 +14,62 @@ local state = {
   duration = 0,
   playing = false,
   has_track = false,
-  popup_open = false,
 }
 
 local function fmt_time(sec)
   sec = math.floor(tonumber(sec) or 0)
   if sec < 0 then sec = 0 end
-  local m = math.floor(sec / 60)
-  local s = sec % 60
-  return string.format("%d:%02d", m, s)
+  return string.format("%d:%02d", math.floor(sec / 60), sec % 60)
 end
 
+-- Cover / song artwork (left of text)
 local cover = sbar.add("item", "media.cover", {
   position = "center",
   drawing = false,
   background = {
     image = {
       string = "media.artwork",
-      scale = 0.95,
-      corner_radius = 5,
+      scale = 0.85,
+      corner_radius = 4,
     },
     color = colors.transparent,
-    height = 28,
+    height = 26,
+  },
+  icon = {
+    string = "􀑪",
+    font = { size = 14.0 },
+    color = colors.magenta,
+    drawing = false,
   },
   label = { drawing = false },
-  icon = { drawing = false },
-  padding_right = 4,
+  padding_left = 6,
+  padding_right = 2,
 })
 
+-- Title / artist / elapsed (right of cover)
 local player = sbar.add("item", "media.player", {
   position = "center",
   drawing = false,
   updates = true,
-  icon = {
-    string = icons.media.play_pause,
-    padding_left = 8,
-    padding_right = 6,
-    color = colors.magenta,
-    font = { size = 14.0 },
-  },
+  icon = { drawing = false },
   label = {
     string = "No media",
+    padding_left = 4,
     padding_right = 10,
     font = { size = 12.0 },
     color = colors.white,
-    max_chars = 40,
+    max_chars = 48,
   },
   background = {
     color = colors.bg1,
     border_color = colors.bg2,
-    border_width = 1,
+    border_width = 0,
     height = 28,
-    corner_radius = 8,
   },
   popup = {
     align = "center",
-    horizontal = false,
+    horizontal = true,
+    height = 40,
   },
 })
 
@@ -83,50 +83,52 @@ sbar.add("bracket", "media.bracket", { cover.name, player.name }, {
   },
 })
 
--- Popup panel (vertical)
-local pop_title = sbar.add("item", "media.pop.title", {
-  position = "popup." .. player.name,
-  icon = { drawing = false },
-  width = 280,
-  align = "center",
-  label = {
-    string = "—",
-    font = { size = 13.0, style = settings.font.style_map["Bold"] },
-    color = colors.white,
-    max_chars = 36,
-    padding_left = 12,
-    padding_right = 12,
-  },
-})
-
+-- Popup: stacked title (artist above title via y_offset)
 local pop_artist = sbar.add("item", "media.pop.artist", {
   position = "popup." .. player.name,
   icon = { drawing = false },
-  width = 280,
-  align = "center",
+  width = 0,
   label = {
     string = "—",
-    font = { size = 11.0 },
-    color = colors.grey,
-    max_chars = 40,
-    padding_left = 12,
-    padding_right = 12,
+    font = { size = 9.0 },
+    color = colors.with_alpha(colors.white, 0.6),
+    max_chars = 28,
+    y_offset = 6,
+    width = 0,
   },
+  padding_left = 10,
+  padding_right = 0,
+})
+
+local pop_title = sbar.add("item", "media.pop.title", {
+  position = "popup." .. player.name,
+  icon = { drawing = false },
+  label = {
+    string = "—",
+    font = { size = 12.0, style = settings.font.style_map["Bold"] },
+    color = colors.white,
+    max_chars = 26,
+    y_offset = -5,
+    width = 160,
+  },
+  padding_left = 0,
+  padding_right = 8,
 })
 
 local pop_time = sbar.add("item", "media.pop.time", {
   position = "popup." .. player.name,
   icon = { drawing = false },
-  width = 280,
-  align = "center",
   label = {
-    string = "0:00 / 0:00",
+    string = "0:00",
     font = { family = settings.font.numbers, size = 11.0 },
-    color = colors.white,
+    color = colors.grey,
+    width = 72,
+    align = "center",
   },
 })
 
-local scrubber = sbar.add("slider", 240, {
+-- Scrubber — click_script like volume widget (PERCENTAGE is injected by sketchybar)
+local scrubber = sbar.add("slider", 120, {
   position = "popup." .. player.name,
   slider = {
     percentage = 0,
@@ -139,14 +141,16 @@ local scrubber = sbar.add("slider", 240, {
     knob = {
       string = "􀀁",
       drawing = true,
-      color = colors.white,
     },
   },
   background = {
-    color = colors.transparent,
-    padding_left = 20,
-    padding_right = 20,
+    color = colors.bg1,
+    height = 2,
+    y_offset = -20,
+    padding_left = 6,
+    padding_right = 6,
   },
+  click_script = "$CONFIG_DIR/helpers/media_seek_pct.sh $PERCENTAGE",
 })
 
 local function add_btn(name, icon, script)
@@ -154,53 +158,73 @@ local function add_btn(name, icon, script)
     position = "popup." .. player.name,
     icon = {
       string = icon,
-      font = { size = 16.0 },
-      padding_left = 14,
-      padding_right = 14,
+      font = { size = 14.0 },
+      padding_left = 8,
+      padding_right = 8,
       color = colors.white,
     },
     label = { drawing = false },
-    width = 56,
-    align = "center",
     click_script = script,
   })
 end
 
--- Control row (separate items stacked vertically is fine; use wide click targets)
 local btn_back15 = add_btn("media.pop.back15", "􀊎", "$CONFIG_DIR/helpers/media_seek.sh -15")
 local btn_prev = add_btn("media.pop.prev", icons.media.back, "nowplaying-cli previous")
 local btn_pp = add_btn("media.pop.pp", icons.media.play_pause, "nowplaying-cli togglePlayPause")
 local btn_next = add_btn("media.pop.next", icons.media.forward, "nowplaying-cli next")
 local btn_fwd15 = add_btn("media.pop.fwd15", "􀊐", "$CONFIG_DIR/helpers/media_seek.sh 15")
 
--- Make controls sit as a horizontal-looking group via shared y — sketchybar vertical
--- popup stacks them; wrap in a note: users get full panel under the bar item.
-
 local function refresh_ui()
   local label = state.title
   if state.artist ~= "" then
     label = state.artist .. " — " .. state.title
   end
-  if label == "" then label = "No media" end
-
-  local icon = state.playing and "􀊆" or icons.media.play_pause
-  local icon_color = state.playing and colors.green or colors.magenta
+  if state.has_track then
+    label = label .. "  " .. fmt_time(state.elapsed)
+  elseif label == "" then
+    label = "No media"
+  end
 
   player:set({
     drawing = state.has_track,
-    icon = { string = icon, color = icon_color },
     label = {
       string = label,
       color = state.playing and colors.white or colors.grey,
     },
   })
-  cover:set({ drawing = state.has_track })
+
+  -- Cover: song icon always; artwork overlays when MediaRemote provides it
+  cover:set({
+    drawing = state.has_track,
+    icon = {
+      string = "􀑪",
+      drawing = true,
+      color = state.playing and colors.green or colors.magenta,
+      font = { size = 15.0 },
+      padding_left = 8,
+      padding_right = 4,
+    },
+    background = {
+      image = {
+        string = "media.artwork",
+        scale = 0.85,
+        corner_radius = 4,
+      },
+      color = colors.bg1,
+      height = 26,
+    },
+  })
 
   pop_title:set({ label = { string = state.title ~= "" and state.title or "—" } })
-  pop_artist:set({ label = { string = state.artist ~= "" and state.artist or "—" } })
+  pop_artist:set({
+    label = {
+      string = state.artist ~= "" and state.artist or "—",
+      width = "dynamic",
+    },
+  })
   pop_time:set({
     label = {
-      string = fmt_time(state.elapsed) .. " / " .. fmt_time(state.duration),
+      string = fmt_time(state.elapsed) .. "/" .. fmt_time(state.duration),
     },
   })
 
@@ -235,7 +259,6 @@ local function apply_track(title, artist, playing, elapsed, duration)
 
   if not has then
     player:set({ popup = { drawing = false } })
-    state.popup_open = false
   end
   refresh_ui()
 end
@@ -244,18 +267,14 @@ local function parse_json_field(out, key)
   local str = out:match('"' .. key .. '"%s*:%s*"(.-)"')
   if str then return str end
   if out:match('"' .. key .. '"%s*:%s*null') then return nil end
-  local num = out:match('"' .. key .. '"%s*:%s*([%d%.]+)')
-  return num
+  return out:match('"' .. key .. '"%s*:%s*([%d%.]+)')
 end
 
 local function poll_now()
   sbar.exec(
-    "nowplaying-cli get --json title artist appName playbackRate elapsedTime duration 2>/dev/null",
+    "nowplaying-cli get --json title artist playbackRate elapsedTime duration 2>/dev/null",
     function(out)
-      if not out or out == "" then
-        -- keep last track visible if we already have one (paused apps sometimes return empty)
-        return
-      end
+      if not out or out == "" then return end
       local title = parse_json_field(out, "title")
       local artist = parse_json_field(out, "artist")
       local rate = tonumber(parse_json_field(out, "playbackRate") or "0") or 0
@@ -266,11 +285,8 @@ local function poll_now()
 
       if title and title ~= "" then
         apply_track(title, artist, rate > 0, elapsed, duration)
-      elseif state.has_track then
-        -- no title in response but we had a track: treat as stopped only if clearly empty object
-        if out:find('"title"%s*:%s*null') then
-          apply_track("", "", false, 0, 0)
-        end
+      elseif state.has_track and out:find('"title"%s*:%s*null') then
+        apply_track("", "", false, 0, 0)
       end
     end
   )
@@ -281,10 +297,8 @@ player:subscribe("media_change", function(env)
   local title = info.title
   local artist = info.artist
   local st = info.state
-  local playing = (st == "playing")
-  local paused = (st == "paused")
-  if title and title ~= "" and (playing or paused) then
-    apply_track(title, artist, playing, state.elapsed, state.duration)
+  if title and title ~= "" and (st == "playing" or st == "paused") then
+    apply_track(title, artist, st == "playing", state.elapsed, state.duration)
     poll_now()
   elseif st == "stopped" or st == "none" then
     apply_track("", "", false, 0, 0)
@@ -296,51 +310,25 @@ local poller = sbar.add("item", "media.poller", {
   updates = true,
   update_freq = 1,
 })
-
-poller:subscribe("routine", function(_)
-  poll_now()
-end)
+poller:subscribe("routine", poll_now)
 
 local function toggle_popup()
-  if not state.has_track then
-    poll_now()
-  end
   local open = player:query().popup.drawing == "on"
   if open then
     player:set({ popup = { drawing = false } })
-    state.popup_open = false
   else
     poll_now()
     player:set({ popup = { drawing = true } })
-    state.popup_open = true
+    -- animate artist width like Felix media
+    sbar.animate("tanh", 20, function()
+      pop_artist:set({ label = { width = "dynamic" } })
+    end)
   end
 end
 
-player:subscribe("mouse.clicked", function(_)
-  toggle_popup()
-end)
-
-cover:subscribe("mouse.clicked", function(_)
-  toggle_popup()
-end)
-
--- Don't auto-close on mouse exit while using the scrubber
-player:subscribe("mouse.exited.global", function(_)
-  -- keep open; click again to close
-end)
-
-scrubber:subscribe("mouse.clicked", function(env)
-  local pct = env.PERCENTAGE
-  if pct then
-    sbar.exec("$CONFIG_DIR/helpers/media_seek_pct.sh " .. tostring(pct))
-    sbar.delay(0.2, poll_now)
-  end
-end)
-
--- External hotkey / script can open panel: sketchybar --trigger media_toggle_popup
-player:subscribe("media_toggle_popup", function(_)
-  toggle_popup()
-end)
+player:subscribe("mouse.clicked", toggle_popup)
+cover:subscribe("mouse.clicked", toggle_popup)
+player:subscribe("media_toggle_popup", toggle_popup)
 
 sbar.add("item", "media.pad", {
   position = "center",
@@ -349,8 +337,6 @@ sbar.add("item", "media.pad", {
   icon = { drawing = false },
 })
 
--- Initial poll
 sbar.delay(0.5, poll_now)
 
--- silence unused locals (buttons kept for click_script)
-local _ = { btn_back15, btn_prev, btn_next, btn_fwd15 }
+local _ = { btn_back15, btn_prev, btn_next, btn_fwd15, btn_pp }
