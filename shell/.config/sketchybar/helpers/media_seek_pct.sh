@@ -1,19 +1,24 @@
 #!/bin/bash
-# Seek to N% of current track (sketchybar passes $PERCENTAGE).
+# Seek to N% of track. Yandex Music often ignores MediaRemote seek —
+# still works for Spotify / Apple Music.
 pct="${1:-0}"
 pct="${pct%%.*}"
 case "$pct" in
   ''|*[!0-9]*) pct=0 ;;
 esac
-if [ "$pct" -gt 100 ]; then pct=100; fi
-if [ "$pct" -lt 0 ]; then pct=0; fi
+[ "$pct" -gt 100 ] && pct=100
+[ "$pct" -lt 0 ] && pct=0
 
 dur=$(nowplaying-cli get duration 2>/dev/null | head -1)
 dur="${dur%%.*}"
 case "$dur" in
   ''|*[!0-9]*) exit 0 ;;
 esac
-if [ "$dur" -le 0 ]; then exit 0; fi
+[ "$dur" -le 0 ] && exit 0
 
 seek=$(( dur * pct / 100 ))
-nowplaying-cli seek "$seek" >/dev/null 2>&1 || true
+nowplaying-cli seek "$seek" >/dev/null 2>&1 \
+  || nowplaying-cli seek "${seek}.0" >/dev/null 2>&1 \
+  || true
+
+sketchybar --trigger media_change >/dev/null 2>&1 || true
