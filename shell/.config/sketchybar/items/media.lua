@@ -22,6 +22,22 @@ local function fmt_time(sec)
   return string.format("%d:%02d", math.floor(sec / 60), sec % 60)
 end
 
+-- Yandex often reports elapsed=0 but duration>0 — show static length, not 0:00.
+local function display_time()
+  local elapsed = tonumber(state.elapsed) or 0
+  local duration = tonumber(state.duration) or 0
+  if duration > 0 and elapsed <= 0 then
+    return fmt_time(duration), true -- static total
+  end
+  if duration > 0 then
+    return fmt_time(elapsed) .. " / " .. fmt_time(duration), false
+  end
+  if elapsed > 0 then
+    return fmt_time(elapsed), false
+  end
+  return nil, false
+end
+
 -- Cover / song artwork (left of text)
 local cover = sbar.add("item", "media.cover", {
   position = "center",
@@ -179,8 +195,9 @@ local function refresh_ui()
   if state.artist ~= "" then
     label = state.artist .. " — " .. state.title
   end
-  if state.has_track then
-    label = label .. "  " .. fmt_time(state.elapsed)
+  local time_str = display_time()
+  if state.has_track and time_str then
+    label = label .. "  " .. time_str
   elseif label == "" then
     label = "No media"
   end
@@ -224,7 +241,8 @@ local function refresh_ui()
   })
   pop_time:set({
     label = {
-      string = fmt_time(state.elapsed) .. "/" .. fmt_time(state.duration),
+      string = time_str or "—",
+      color = (state.duration > 0 and state.elapsed <= 0) and colors.grey or colors.white,
     },
   })
 
@@ -271,22 +289,29 @@ local function parse_json_field(out, key)
 end
 
 local function poll_now()
+  -- Line-based get is more reliable than JSON inside sbar.exec callbacks.
+  -- Order must match the argument list below.
   sbar.exec(
-    "nowplaying-cli get --json title artist playbackRate elapsedTime duration 2>/dev/null",
+    "nowplaying-cli get title artist playbackRate elapsedTime duration 2>/dev/null",
     function(out)
       if not out or out == "" then return end
-      local title = parse_json_field(out, "title")
-      local artist = parse_json_field(out, "artist")
-      local rate = tonumber(parse_json_field(out, "playbackRate") or "0") or 0
-      local elapsed = tonumber(parse_json_field(out, "elapsedTime") or "0") or 0
-      local duration = tonumber(parse_json_field(out, "duration") or "0") or 0
-      if type(title) ~= "string" then title = nil end
-      if type(artist) ~= "string" then artist = nil end
+      local lines = {}
+      for line in (out .. "\n"):gmatch("(.-)\n") do
+        table.insert(lines, line)
+      end
+      local title = lines[1]
+      local artist = lines[2]
+      local rate = tonumber(lines[3]) or 0
+      local elapsed = tonumber(lines[4]) or 0
+      local duration = tonumber(lines[5]) or 0
 
-      if title and title ~= "" then
+      if title == "null" or title == "(null)" then title = nil end
+      if artist == "null" or artist == "(null)" then artist = nil end
+
+      if title and title ~= "" and title ~= "null" then
         apply_track(title, artist, rate > 0, elapsed, duration)
-      elseif state.has_track and out:find('"title"%s*:%s*null') then
-        apply_track("", "", false, 0, 0)
+      elseif state.has_track and (not title or title == "") then
+        -- keep showing last track unless clearly cleared
       end
     end
   )
