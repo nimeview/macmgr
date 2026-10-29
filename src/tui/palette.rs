@@ -55,8 +55,18 @@ pub const COMMANDS: &[PaletteCmd] = &[
     },
     PaletteCmd {
         id: "pkg:any",
-        label: "Brew · Install by name",
-        keywords: "install adhoc any",
+        label: "Brew · Install by name (+track)",
+        keywords: "install adhoc any track",
+    },
+    PaletteCmd {
+        id: "pkg:track",
+        label: "Brew · Track in user.toml",
+        keywords: "manifest add package user",
+    },
+    PaletteCmd {
+        id: "config:add",
+        label: "Config · Add path to user.toml",
+        keywords: "manifest track config nvim",
     },
     PaletteCmd {
         id: "rice:sync",
@@ -98,7 +108,7 @@ pub const COMMANDS: &[PaletteCmd] = &[
         label: "Hotkeys · CRUD skhd",
         keywords: "skhd binding keys",
     },
-      PaletteCmd {
+    PaletteCmd {
         id: "catalog:pull",
         label: "Catalog · Pull community feeds",
         keywords: "feed community sync pull plugins",
@@ -158,9 +168,7 @@ pub fn filtered(query: &str) -> Vec<&'static PaletteCmd> {
     COMMANDS
         .iter()
         .filter(|c| {
-            c.id.contains(&q)
-                || c.label.to_lowercase().contains(&q)
-                || c.keywords.contains(&q)
+            c.id.contains(&q) || c.label.to_lowercase().contains(&q) || c.keywords.contains(&q)
         })
         .collect()
 }

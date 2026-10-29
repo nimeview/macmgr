@@ -111,11 +111,19 @@ pub const ENTRIES: &[MoreEntry] = &[
         kind: MoreKind::Section,
     },
     MoreEntry {
+        label: "First-run setup (seed shell/ + core)",
+        kind: MoreKind::Action,
+    },
+    MoreEntry {
         label: "Install CORE rice",
         kind: MoreKind::Action,
     },
     MoreEntry {
         label: "Install FULL rice",
+        kind: MoreKind::Action,
+    },
+    MoreEntry {
+        label: "PURGE environment (full wipe)",
         kind: MoreKind::Action,
     },
     MoreEntry {

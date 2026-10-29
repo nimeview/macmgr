@@ -2,7 +2,7 @@
 # Bootstrap macmgr on a fresh Mac, then install the rice.
 set -euo pipefail
 
-REPO_URL="${MACMGR_REPO:-https://github.com/YOUR_USER/MacOS_Manager.git}"
+REPO_URL="${MACMGR_REPO:-https://github.com/arturpanan/MacOS_Manager.git}"
 DIR="${MACMGR_DIR:-$HOME/src/MacOS_Manager}"
 
 if ! command -v brew >/dev/null 2>&1; then
@@ -26,6 +26,9 @@ mkdir -p "$HOME/.config/macmgr"
 cp -f "$DIR/manifest.toml" "$HOME/.config/macmgr/manifest.toml"
 
 echo "macmgr installed. Next:"
+echo "  macmgr setup --yes          # doctor + install core + seed shell/"
 echo "  macmgr doctor"
-echo "  macmgr install --scope core"
-echo "  macmgr          # TUI"
+echo "  macmgr                      # TUI"
+echo ""
+echo "Note: yabai scripting addition may require partially disabling SIP."
+echo "See docs/INSTALL.md"

@@ -3,6 +3,22 @@
 **/*.rs.bk
 .DS_Store
 *.swp
+*.swo
+*~
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*
+user.toml
+# Local overrides / secrets
+manifest.local.toml
+
+# Built helper binaries (rebuild via make in shell helpers)
 shell/.config/sketchybar/helpers/**/bin/
 shell/.config/sketchybar/**/*.macmgr.bak
+
+# Editor / OS
+.vscode/
+*.code-workspace

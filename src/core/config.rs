@@ -126,11 +126,32 @@ pub fn list_live_files(manifest: &Manifest, id: &str) -> Result<Vec<PathBuf>> {
 }
 
 fn is_probably_text(path: &Path) -> bool {
-    match path.extension().and_then(|e| e.to_str()).map(|s| s.to_lowercase()) {
+    match path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_lowercase())
+    {
         Some(ext) => matches!(
             ext.as_str(),
-            "lua" | "sh" | "zsh" | "bash" | "toml" | "json" | "yml" | "yaml" | "conf"
-                | "cfg" | "txt" | "md" | "rc" | "css" | "js" | "ts" | "c" | "h" | "cpp"
+            "lua"
+                | "sh"
+                | "zsh"
+                | "bash"
+                | "toml"
+                | "json"
+                | "yml"
+                | "yaml"
+                | "conf"
+                | "cfg"
+                | "txt"
+                | "md"
+                | "rc"
+                | "css"
+                | "js"
+                | "ts"
+                | "c"
+                | "h"
+                | "cpp"
         ),
         None => {
             let name = path

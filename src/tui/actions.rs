@@ -7,6 +7,7 @@ use crate::core::extras;
 use crate::core::hotkeys;
 use crate::core::install::{self, InstallMode};
 use crate::core::logs;
+use crate::core::manifest::Manifest;
 use crate::core::pack;
 use crate::core::plugins::{self, PluginKind};
 use crate::core::presets;
@@ -14,8 +15,10 @@ use crate::core::profiles;
 use crate::core::rice;
 use crate::core::rules;
 use crate::core::service;
+use crate::core::setup;
 use crate::core::snapshot::{self, SnapshotKind};
 use crate::core::themes;
+use crate::core::user_manifest;
 use crate::core::wallpaper;
 use crate::core::watch;
 
@@ -42,26 +45,18 @@ impl App {
     pub fn open_external_path(&mut self, path: PathBuf) {
         let auto = self.auto_reload_plugins;
         let manifest = self.manifest.clone();
-        self.queue_editor(move || {
-            match config::edit_file_simple(&path) {
-                Ok(()) => {
-                    if auto && path.extension().and_then(|e| e.to_str()) == Some("lua") {
-                        match plugins::reload_bar_after(&manifest, &path) {
-                            Ok(()) => format!(
-                                "edited {} · validated · bar reloaded",
-                                path.display()
-                            ),
-                            Err(e) => format!(
-                                "edited {} · reload blocked:\n{e}",
-                                path.display()
-                            ),
-                        }
-                    } else {
-                        format!("edited {}", path.display())
+        self.queue_editor(move || match config::edit_file_simple(&path) {
+            Ok(()) => {
+                if auto && path.extension().and_then(|e| e.to_str()) == Some("lua") {
+                    match plugins::reload_bar_after(&manifest, &path) {
+                        Ok(()) => format!("edited {} · validated · bar reloaded", path.display()),
+                        Err(e) => format!("edited {} · reload blocked:\n{e}", path.display()),
                     }
+                } else {
+                    format!("edited {}", path.display())
                 }
-                Err(e) => format!("editor error: {e}"),
             }
+            Err(e) => format!("editor error: {e}"),
         });
     }
 
@@ -87,7 +82,11 @@ impl App {
     pub fn run_confirmed(&mut self, action: ConfirmAction) {
         match action {
             ConfirmAction::PkgInstall(name) => {
-                let def = self.manifest.find_package(&name).cloned();
+                let def = {
+                    let (_, bare) = brew::parse_pkg_spec(&name);
+                    self.manifest.find_package(&bare).cloned()
+                };
+                let track_spec = name.clone();
                 self.queue_suspend(move || {
                     let res = if let Some(def) = def {
                         brew::install_package_visible(&def)
@@ -95,10 +94,33 @@ impl App {
                         brew::install_any_visible(&name)
                     };
                     match res {
-                        Ok(()) => format!("Installed {name}\n\nPress Enter…"),
+                        Ok(()) => {
+                            let tracked = user_manifest::track_package(&track_spec)
+                                .map(|p| format!(" · tracked {}", p.name))
+                                .unwrap_or_else(|e| format!(" · track skip: {e}"));
+                            format!("Installed {name}{tracked}\n\nPress Enter…")
+                        }
                         Err(e) => format!("error: {e}\n\nPress Enter…"),
                     }
                 });
+            }
+            ConfirmAction::PkgUntrack { name, force } => {
+                match user_manifest::untrack_package(&name, force) {
+                    Ok(()) => {
+                        self.reload_manifest();
+                        self.set_msg(format!("untracked {name}"));
+                    }
+                    Err(e) => self.set_msg(format!("error: {e}")),
+                }
+            }
+            ConfirmAction::ConfigUntrack { id, force } => {
+                match user_manifest::untrack_config(&id, force) {
+                    Ok(()) => {
+                        self.reload_manifest();
+                        self.set_msg(format!("untracked config {id}"));
+                    }
+                    Err(e) => self.set_msg(format!("error: {e}")),
+                }
             }
             ConfirmAction::PkgUninstall(name) => {
                 let kind = self
@@ -106,10 +128,12 @@ impl App {
                     .find_package(&name)
                     .map(|p| p.kind.clone())
                     .unwrap_or_else(|| "formula".into());
-                self.queue_suspend(move || match brew::uninstall_package_visible(&name, &kind) {
-                    Ok(()) => format!("Uninstalled {name}\n\nPress Enter…"),
-                    Err(e) => format!("error: {e}\n\nPress Enter…"),
-                });
+                self.queue_suspend(
+                    move || match brew::uninstall_package_visible(&name, &kind) {
+                        Ok(()) => format!("Uninstalled {name}\n\nPress Enter…"),
+                        Err(e) => format!("error: {e}\n\nPress Enter…"),
+                    },
+                );
             }
             ConfirmAction::PkgUpgrade(name) => {
                 let kind = self
@@ -137,6 +161,15 @@ impl App {
                     }
                 });
             }
+            ConfirmAction::PurgeEnv => {
+                let manifest = self.manifest.clone();
+                self.queue_suspend(move || {
+                    match install::purge(&manifest, &install::PurgeOptions::default()) {
+                        Ok(()) => "PURGE finished.\n\nPress Enter…".into(),
+                        Err(e) => format!("Purge error: {e}\n\nPress Enter…"),
+                    }
+                });
+            }
             ConfirmAction::ReloadRice => {
                 let manifest = self.manifest.clone();
                 self.queue_suspend(move || match service::reload_rice(&manifest) {
@@ -154,21 +187,16 @@ impl App {
                     Err(e) => self.set_msg(format!("error: {e}")),
                 }
             }
-            ConfirmAction::RestoreSnapshot(id) => {
-                match snapshot::restore(&self.manifest, &id) {
-                    Ok(info) => {
-                        let _ = plugins::reload_bar(&self.manifest);
-                        self.snapshots = snapshot::list().unwrap_or_default();
-                        self.overlay = Overlay::Snapshots;
-                        self.set_msg(format!(
-                            "restored {} · undo ready",
-                            info.meta.id
-                        ));
-                        self.refresh_tab(true);
-                    }
-                    Err(e) => self.set_msg(format!("error: {e}")),
+            ConfirmAction::RestoreSnapshot(id) => match snapshot::restore(&self.manifest, &id) {
+                Ok(info) => {
+                    let _ = plugins::reload_bar(&self.manifest);
+                    self.snapshots = snapshot::list().unwrap_or_default();
+                    self.overlay = Overlay::Snapshots;
+                    self.set_msg(format!("restored {} · undo ready", info.meta.id));
+                    self.refresh_tab(true);
                 }
-            }
+                Err(e) => self.set_msg(format!("error: {e}")),
+            },
             ConfirmAction::DeleteSnapshot(id) => match snapshot::delete(&id) {
                 Ok(()) => {
                     self.snapshots = snapshot::list().unwrap_or_default();
@@ -371,9 +399,7 @@ impl App {
                             self.overlay = Overlay::None;
                             self.set_msg(format!(
                                 "wallpaper: {}",
-                                path.file_name()
-                                    .and_then(|n| n.to_str())
-                                    .unwrap_or("?")
+                                path.file_name().and_then(|n| n.to_str()).unwrap_or("?")
                             ));
                         }
                         Err(e) => self.set_msg(format!("error: {e}")),
@@ -545,12 +571,7 @@ impl App {
                     self.set_msg(detail);
                 }
             }
-            Tab::More => self.run_more_label(
-                self.more_items
-                    .get(real)
-                    .copied()
-                    .unwrap_or(""),
-            ),
+            Tab::More => self.run_more_label(self.more_items.get(real).copied().unwrap_or("")),
             Tab::Dashboard => {}
         }
     }
@@ -560,12 +581,24 @@ impl App {
             return;
         }
         match label {
+            "First-run setup (seed shell/ + core)" => {
+                let manifest = self.manifest.clone();
+                self.queue_suspend(move || match setup::run(&manifest, true, false) {
+                    Ok(()) => "Setup finished.\n\nPress Enter…".into(),
+                    Err(e) => format!("Setup error: {e}\n\nPress Enter…"),
+                });
+            }
             "Install CORE rice" => {
                 self.open_confirm("Install CORE rice?".into(), ConfirmAction::InstallCore)
             }
             "Install FULL rice" => {
                 self.open_confirm("Install FULL rice?".into(), ConfirmAction::InstallFull)
             }
+            "PURGE environment (full wipe)" => self.open_confirm(
+                "PURGE: stop services, uninstall brew rice pkgs, delete LIVE+rice+macmgr data?"
+                    .into(),
+                ConfirmAction::PurgeEnv,
+            ),
             "Update core stack (brew upgrade + reload)" => self.open_confirm(
                 "Upgrade core brew packages + reload?".into(),
                 ConfirmAction::UpdateCore,
@@ -693,6 +726,34 @@ impl App {
         ));
     }
 
+    pub fn reload_manifest(&mut self) {
+        match Manifest::load() {
+            Ok(m) => {
+                self.manifest = m;
+                self.refresh_tab(true);
+            }
+            Err(e) => self.set_msg(format!("manifest reload error: {e}")),
+        }
+    }
+
+    pub fn open_pkg_track_prompt(&mut self) {
+        self.overlay = Overlay::Prompt {
+            kind: PromptKind::PkgTrack,
+            title: "track package (user.toml)".into(),
+            buffer: String::new(),
+        };
+        self.set_msg("ripgrep | cask:firefox · Enter track · Esc");
+    }
+
+    pub fn open_config_add_prompt(&mut self) {
+        self.overlay = Overlay::Prompt {
+            kind: PromptKind::ConfigAdd,
+            title: "add config (id path)".into(),
+            buffer: String::new(),
+        };
+        self.set_msg("nvim ~/.config/nvim · Enter · Esc");
+    }
+
     pub fn submit_prompt(&mut self) {
         let (kind, buffer) = match &self.overlay {
             Overlay::Prompt { kind, buffer, .. } => (kind.clone(), buffer.clone()),
@@ -702,7 +763,11 @@ impl App {
         let buffer = buffer.trim().to_string();
         match kind {
             PromptKind::SnapshotName => {
-                let label = if buffer.is_empty() { None } else { Some(buffer.as_str()) };
+                let label = if buffer.is_empty() {
+                    None
+                } else {
+                    Some(buffer.as_str())
+                };
                 match snapshot::create(&self.manifest, label, SnapshotKind::Manual) {
                     Ok(info) => {
                         self.snapshots = snapshot::list().unwrap_or_default();
@@ -719,11 +784,9 @@ impl App {
                     Some(PathBuf::from(&buffer))
                 };
                 let manifest = self.manifest.clone();
-                self.queue_suspend(move || {
-                    match pack::export(&manifest, path.as_deref()) {
-                        Ok(p) => format!("export → {}\n\nPress Enter…", p.display()),
-                        Err(e) => format!("error: {e}\n\nPress Enter…"),
-                    }
+                self.queue_suspend(move || match pack::export(&manifest, path.as_deref()) {
+                    Ok(p) => format!("export → {}\n\nPress Enter…", p.display()),
+                    Err(e) => format!("error: {e}\n\nPress Enter…"),
                 });
             }
             PromptKind::ImportPath => {
@@ -782,13 +845,41 @@ impl App {
                 }
                 let (kind, name) = brew::parse_pkg_spec(&buffer);
                 self.open_confirm(
-                    format!("Install {kind} `{name}` via brew?"),
+                    format!("Install {kind} `{name}` via brew? (also tracks)"),
                     ConfirmAction::PkgInstall(if kind == "cask" {
                         format!("cask:{name}")
                     } else {
                         name
                     }),
                 );
+            }
+            PromptKind::PkgTrack => {
+                if buffer.is_empty() {
+                    self.set_msg("empty package name");
+                    return;
+                }
+                match user_manifest::track_package(&buffer) {
+                    Ok(p) => {
+                        self.reload_manifest();
+                        self.set_msg(format!("tracked {} {}", p.kind, p.name));
+                    }
+                    Err(e) => self.set_msg(format!("error: {e}")),
+                }
+            }
+            PromptKind::ConfigAdd => {
+                if buffer.is_empty() {
+                    self.set_msg("empty config spec");
+                    return;
+                }
+                match user_manifest::parse_config_add_spec(&buffer).and_then(|(id, path)| {
+                    user_manifest::track_config(&self.manifest, &id, &path, None)
+                }) {
+                    Ok(cfg) => {
+                        self.reload_manifest();
+                        self.set_msg(format!("tracked config {} → {}", cfg.id, cfg.path));
+                    }
+                    Err(e) => self.set_msg(format!("error: {e}")),
+                }
             }
             PromptKind::PkgSearchQuery => {
                 if buffer.is_empty() {
@@ -853,10 +944,15 @@ impl App {
             "pkg:any" => {
                 self.overlay = Overlay::Prompt {
                     kind: PromptKind::PkgAny,
-                    title: "brew install (name or cask:name)".into(),
+                    title: "brew install (+track)".into(),
                     buffer: String::new(),
                 };
-                self.set_msg("package name · Enter install · Esc");
+                self.set_msg("ripgrep | cask:firefox · Enter · Esc");
+            }
+            "pkg:track" => self.open_pkg_track_prompt(),
+            "config:add" => {
+                self.switch_tab(Tab::Configs);
+                self.open_config_add_prompt();
             }
             "rice:sync" => self.open_rice_sync(),
             "rice:init" => match rice::init(&self.manifest, true) {
@@ -935,7 +1031,10 @@ impl App {
                 Err(e) => self.set_msg(format!("error: {e}")),
             },
             "reload:rice" => {
-                self.open_confirm("Reload core rice services?".into(), ConfirmAction::ReloadRice);
+                self.open_confirm(
+                    "Reload core rice services?".into(),
+                    ConfirmAction::ReloadRice,
+                );
             }
             "watch" => self.toggle_watch(),
             "doctor" => {

@@ -92,7 +92,11 @@ pub fn format_binding_lines(keys: &str, action: &str, enabled: bool) -> Vec<Stri
     let keys = keys.trim();
     let action = action.trim();
     let parts: Vec<&str> = if action.contains('\n') {
-        action.lines().map(str::trim).filter(|l| !l.is_empty()).collect()
+        action
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.is_empty())
+            .collect()
     } else {
         vec![action]
     };
@@ -312,10 +316,7 @@ pub fn format_table(keys: &[Hotkey]) -> String {
     for (n, hk) in keys.iter().enumerate() {
         let mark = if hk.enabled { "ON " } else { "off" };
         let multi = if hk.is_multiline() { " …" } else { "" };
-        let action = crate::util::text::truncate_chars(
-            &hk.action.replace('\n', " · "),
-            44,
-        );
+        let action = crate::util::text::truncate_chars(&hk.action.replace('\n', " · "), 44);
         out.push_str(&format!(
             "  {:>3} {mark} {:<24} {}{multi}\n",
             n + 1,

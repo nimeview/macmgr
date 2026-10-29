@@ -34,6 +34,9 @@ pub fn apply(manifest: &Manifest, id: &str) -> Result<()> {
     run_status("yabai", &["-m", "config", "left_padding", &pad])?;
     run_status("yabai", &["-m", "config", "right_padding", &pad])?;
     run_status("yabai", &["-m", "config", "window_gap", &gap])?;
-    run_status("yabai", &["-m", "config", "normal_window_opacity", &opacity])?;
+    run_status(
+        "yabai",
+        &["-m", "config", "normal_window_opacity", &opacity],
+    )?;
     Ok(())
 }

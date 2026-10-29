@@ -15,12 +15,15 @@ DIFF              = ещё не закрепил — ок
 | Хочу | Делаю |
 |------|--------|
 | Открыть UI | `macmgr` |
+| Первый Mac | `macmgr setup --yes` · [INSTALL.md](INSTALL.md) |
 | Править бар | Cfg/`e` или Plug/`e` → nano |
-| Любой brew | Pkgs `a` / `s` · `pkg install` |
+| Любой brew | Pkgs `a`/`t`/`x` · `pkg add` / `pkg install` |
+| Добавить конфиг | Cfg `a` · `config add nvim ~/.config/nvim` |
 | Hotkey | More → Hotkeys · `;;` = новая строка |
 | Закрепить | `rice push` → `rice commit` → `git-push` |
 | Откат | `snapshot undo` / `rice pull --yes` |
 | Другой Mac | `export` → `import` → `doctor` |
+| JSON | `doctor --json` · `status --json` |
 
 ## Клавиши TUI
 

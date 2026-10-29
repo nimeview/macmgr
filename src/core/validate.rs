@@ -43,11 +43,7 @@ pub fn lua_file(path: &Path) -> Result<()> {
             return Ok(());
         }
         let err = String::from_utf8_lossy(&out.stderr);
-        bail!(
-            "Lua syntax error in {}:\n{}",
-            path.display(),
-            err.trim()
-        );
+        bail!("Lua syntax error in {}:\n{}", path.display(), err.trim());
     }
 
     // No checker installed — don't block reload, but warn via Err? Soft-pass.
@@ -76,10 +72,7 @@ pub fn sketchybar_lua_files(manifest: &Manifest) -> Result<Vec<PathBuf>> {
         if path.extension().and_then(|e| e.to_str()) != Some("lua") {
             continue;
         }
-        let name = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
+        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
         if name.starts_with('.') || name.contains(".macmgr.bak") {
             continue;
         }

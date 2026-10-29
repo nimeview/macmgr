@@ -98,10 +98,7 @@ pub fn init(manifest: &Manifest, with_git: bool) -> Result<PathBuf> {
         }
         let gitignore = root.join(".gitignore");
         if !gitignore.exists() {
-            fs::write(
-                &gitignore,
-                "*.macmgr.bak\n.DS_Store\n",
-            )?;
+            fs::write(&gitignore, "*.macmgr.bak\n.DS_Store\n")?;
         }
     }
 
@@ -196,13 +193,7 @@ fn relative_under(root: &Path, file: &Path) -> Result<PathBuf> {
     let root = fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
     file.strip_prefix(&root)
         .map(|p| p.to_path_buf())
-        .map_err(|_| {
-            anyhow!(
-                "{} is not under {}",
-                file.display(),
-                root.display()
-            )
-        })
+        .map_err(|_| anyhow!("{} is not under {}", file.display(), root.display()))
 }
 
 /// LIVE → rice. Optional `id` / relative-or-absolute `file` under that config.
@@ -276,8 +267,7 @@ pub fn pull(manifest: &Manifest, id: Option<&str>, file: Option<&Path>) -> Resul
             }
             let rel = if f.is_absolute() {
                 // try relative to rice or live
-                relative_under(&rice, f)
-                    .or_else(|_| relative_under(&live, f))?
+                relative_under(&rice, f).or_else(|_| relative_under(&live, f))?
             } else {
                 PathBuf::from(f)
             };
@@ -312,8 +302,7 @@ pub fn diff(manifest: &Manifest, id: Option<&str>, file: Option<&Path>) -> Resul
 
         if let Some(f) = file {
             let rel = if f.is_absolute() {
-                relative_under(&live, f)
-                    .or_else(|_| relative_under(&rice, f))?
+                relative_under(&live, f).or_else(|_| relative_under(&rice, f))?
             } else {
                 PathBuf::from(f)
             };

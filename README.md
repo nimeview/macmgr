@@ -1,130 +1,88 @@
 # macmgr
 
-TUI/CLI‑менеджер macOS‑сборки: **yabai** + **skhd** + **SketchyBar** + **borders**.
+TUI/CLI manager for a macOS tiling rice: **yabai** + **skhd** + **SketchyBar** + **borders** (+ kitty themes).
 
-Полная инструкция (RU): **[docs/USAGE.ru.md](docs/USAGE.ru.md)** · шпаргалка: **[docs/CHEATSHEET.ru.md](docs/CHEATSHEET.ru.md)**
+Russian docs: **[docs/USAGE.ru.md](docs/USAGE.ru.md)** · **[docs/CHEATSHEET.ru.md](docs/CHEATSHEET.ru.md)**
 
-## Зачем
+English: **[docs/USAGE.en.md](docs/USAGE.en.md)** · **[docs/INSTALL.md](docs/INSTALL.md)** · **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 
-Управлять **живой** оболочкой (`~/.config/...`), а не чужим upstream‑форком:
+> **Requires macOS.** yabai’s scripting addition may need partially disabling SIP — see [docs/INSTALL.md](docs/INSTALL.md).
 
-| Слой | Путь | Роль |
-|------|------|------|
-| **LIVE** | `~/.config/…` | Источник правды каждый день |
-| **My rice** | `~/.local/share/macmgr/rice` | Зеркало для selective sync и GitHub |
-| **Pack** | `.tar.gz` | Перенос сборки на другой Mac |
+## Why
 
-Felix/`~/.dotfiles` **не** используется для DIFF/sync — только историческая основа.
+Manage your **live** desktop (`~/.config/…`), not someone else’s upstream fork:
 
-## Установка
+| Layer | Path | Role |
+|-------|------|------|
+| **LIVE** | `~/.config/…` | Daily source of truth |
+| **My rice** | `~/.local/share/macmgr/rice` | Selective sync / git mirror |
+| **Starter** | [`shell/`](shell/) | First-boot snapshot |
+| **Pack** | `.tar.gz` | Move the rice to another Mac |
 
-```bash
-cd ~/Documents/MacOS_Manager   # или клон репо
-cargo install --path .
-mkdir -p ~/.config/macmgr
-cp manifest.toml ~/.config/macmgr/
-macmgr doctor
-macmgr rice init --git          # опционально: зеркало из LIVE
-```
+## Project tour
 
-Бинарник: `macmgr`. Без аргументов открывается **TUI**.
+macmgr turns a collection of macOS tiling-window-manager tools into one
+manageable environment. Instead of remembering separate commands and config
+locations for yabai, skhd, SketchyBar, borders and kitty, you can inspect,
+change, sync and recover the setup from one TUI or CLI.
 
-## Возможности
-
-- **Сервисы** — start/stop/restart yabai, skhd, sketchybar, borders  
-- **Packages** — список из manifest + **любой** brew formula/cask (`a` в TUI / `macmgr pkg install`)  
-- **Configs** — правка LIVE в nano, diff vs rice, Finder  
-- **Plugins** — enable/disable SketchyBar items/widgets, auto‑reload, Lua validate  
-- **Catalog** — builtin + URL + git + **community feeds** (`catalog pull`)  
-- **Hotkeys** — CRUD по LIVE `skhdrc`, в т.ч. **multi-line** (`\` / `;;`)  
-- **Rules** — yabai rules toggle/add  
-- **Themes / Profiles** — цвета бара, work/game профили  
-- **Rice sync** — selective push/pull/diff LIVE ↔ My rice  
-- **Snapshots + undo** — именованные снимки, откат после pull/import/restore  
-- **Export / Import** — один `.tar.gz` на другую машину  
-- **Watch** — авто‑reload бара при правках `.lua`  
-- **Doctor** — SIP, Accessibility, bins, rice path  
-
-## TUI
+### TUI dashboard
 
 ```text
-1 Dash · 2 Svc · 3 Pkgs · 4 Cfg · 5 Plug · 6 Logs · 7 Doc · 8 More
+┌ macmgr · Arthur Rice ──────────────────────────────────────────────────────┐
+│  1/Dash  │  2/Svc  │  3/Pkgs  │  4/Cfg  │  5/Plug  │  6/Logs  │  7/Doc  │
+├ Dashboard ──────────────────────────────────────────────────────────────────┤
+│  Rice overview (LIVE ~/.config)                                             │
+│                                                                             │
+│  Services: 0/4 core running     Packages: 0/0     Configs: 1 present       │
+│  Plugins: 0                     Doctor: 0 warnings  Watch: off             │
+│                                                                             │
+│  ? help · : palette · 1-8 tabs · r refresh · q quit                        │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Где | Клавиши |
-|-----|---------|
-| Везде | `?` help · **`:` palette** · `/` filter · `j/k` · `q` · `r` refresh |
-| **Pkgs** | Enter install/uninstall · **`a` любой brew** · **`s` brew search** · `u` upgrade |
-| **Cfg** | Enter/`e` nano · `s` rice sync · `d` diff · `o` Finder |
-| **Plug** | Enter toggle · `e` nano · `i` catalog · `a`/`A` stub |
-| **More** | секции Daily / presets / safety / install · Enter |
-| **Catalog** | Enter install · `u` from git/URL · **`f` pull feeds** |
-| **Snapshots** | Enter restore · `n` name · `u` undo · `d` delete |
+### Start with a real desktop, not a template
 
-Снапшот оболочки (v0.1): каталог **[shell/](shell/)** + My rice.
+`macmgr setup` checks the machine, installs the required pieces, and seeds the
+starter configuration. From that point on, the running configuration stays the
+source of truth.
 
-## CLI (шпаргалка)
+```text
+starter config ── setup ──► LIVE ~/.config/… ◄──► My rice / git mirror
+                                  │
+                                  ├── services, hotkeys and plugins
+                                  ├── packages and tracked user config
+                                  └── SketchyBar + kitty themes
+```
+
+### Change, compare, and recover
+
+Use the dashboard to control services, edit tracked config, manage packages,
+toggle plugins, and switch themes. Before risky operations such as import,
+pull or restore, macmgr creates an undo snapshot when possible.
+
+The same setup can be exported as one archive and moved to another Mac.
+
+### Built for day-to-day maintenance
+
+The project combines a keyboard-first TUI with a scriptable CLI. It covers
+service control, package tracking, configuration diffs, plugin catalogs,
+hotkeys, themes, rice sync, snapshots, diagnostics and import/export.
+
+Detailed commands, installation notes and the architecture are kept in
+[`docs/`](docs/) so this page can stay focused on the project itself.
+
+## Run locally
 
 ```bash
-macmgr                         # TUI
-macmgr doctor | status | tips
-
-# brew — любой пакет, не только из manifest
-macmgr pkg list
-macmgr pkg search neovim
-macmgr pkg install ripgrep
-macmgr pkg install cask:firefox
-macmgr pkg upgrade
-macmgr pkg uninstall foo --yes
-
-# LIVE configs
-macmgr config list | edit sketchybar | validate | diff
-
-# SketchyBar plugins + catalog
-macmgr plugin list | add mystats --kind widget --reload
-macmgr catalog list
-macmgr catalog pull
-macmgr catalog install clock --reload
-macmgr catalog from-url https://github.com/user/repo.git --id x --path path/x.lua --reload
-macmgr hotkeys add --keys 'alt - r' --action 'cmd1 ;; cmd2'
-
-# skhd
-macmgr hotkeys list | toggle 3 | add --keys 'alt - x' --action '…'
-
-# My rice
-macmgr rice init --git
-macmgr rice status | push | pull --yes | diff
-
-# safety net
-macmgr snapshot create --name before-edit
-macmgr snapshot undo --yes
-macmgr export ~/Desktop/my-rice.tar.gz
-macmgr import ~/Desktop/my-rice.tar.gz --yes
-
-macmgr watch
-macmgr update-core --yes
+cargo install --path .
+cp manifest.toml ~/.config/macmgr/
+macmgr setup --yes
+macmgr
 ```
 
-## Архитектура (кратко)
+Or use [`scripts/bootstrap.sh`](scripts/bootstrap.sh) on a fresh Mac.
 
-```
-src/
-  main.rs + cli.rs          CLI entry
-  tui/                      ratatui app (state / keys / actions / ui)
-  core/                     brew, config, rice, plugins, catalog, hotkeys,
-                            snapshot, pack, themes, profiles, rules, …
-  util/                     editor (nano для TUI), terminal guard, shell
-manifest.toml               packages, services, configs → rice paths
-```
+## License
 
-Опасные операции (pull, import, uninstall, restore) спрашивают confirm; `--yes` для скриптов. Перед pull/import/restore кладётся **undo‑snapshot**.
-
-## Важно
-
-- SIP и Accessibility macmgr **не меняет** — только подсказывает в `doctor`.  
-- Источник правды бара — **LIVE** `~/.config/sketchybar`.  
-- После правок Lua: `luac -p` (валидация) → только потом reload.  
-
-## Лицензия
-
-MIT
+MIT — see [LICENSE](LICENSE) and [NOTICE](NOTICE).

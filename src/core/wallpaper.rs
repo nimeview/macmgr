@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{anyhow, Result};
@@ -30,17 +30,18 @@ pub fn list(manifest: &Manifest) -> Result<Vec<PathBuf>> {
     Ok(files)
 }
 
-pub fn set(path: &PathBuf) -> Result<()> {
+pub fn set(path: &Path) -> Result<()> {
     if !path.exists() {
         return Err(anyhow!("wallpaper not found: {}", path.display()));
     }
-    let path_str = path.to_string_lossy().replace('\\', "\\\\").replace('"', "\\\"");
+    let path_str = path
+        .to_string_lossy()
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"");
     let script = format!(
         r#"tell application "System Events" to tell every desktop to set picture to "{path_str}""#
     );
-    let status = Command::new("osascript")
-        .args(["-e", &script])
-        .status()?;
+    let status = Command::new("osascript").args(["-e", &script]).status()?;
     if status.success() {
         Ok(())
     } else {

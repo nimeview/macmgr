@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
-use crate::core::config;
 use crate::core::catalog;
+use crate::core::config;
 use crate::core::plugins::{self, PluginKind};
 use crate::core::rice;
 use crate::core::snapshot;
@@ -129,12 +129,8 @@ impl App {
                         self.set_msg("name · Enter create · Esc cancel");
                     }
                     KeyCode::Char('u') => {
-                        let tip =
-                            snapshot::undo_available().unwrap_or_else(|| "(empty)".into());
-                        self.open_confirm(
-                            format!("Undo → `{tip}`?"),
-                            ConfirmAction::Undo,
-                        );
+                        let tip = snapshot::undo_available().unwrap_or_else(|| "(empty)".into());
+                        self.open_confirm(format!("Undo → `{tip}`?"), ConfirmAction::Undo);
                     }
                     KeyCode::Char('d') => {
                         let indices = self.filtered_indices();
@@ -219,10 +215,8 @@ impl App {
                             Err(e) => self.set_msg(format!("error: {e}")),
                         }
                     }
-                    KeyCode::Char('A') => self.open_confirm(
-                        "Pull ALL rice → LIVE?".into(),
-                        ConfirmAction::RicePullAll,
-                    ),
+                    KeyCode::Char('A') => self
+                        .open_confirm("Pull ALL rice → LIVE?".into(), ConfirmAction::RicePullAll),
                     _ => {}
                 }
                 return;
@@ -310,19 +304,17 @@ impl App {
                         };
                         self.set_msg("id https://…git [path] · Enter");
                     }
-                    KeyCode::Char('f') | KeyCode::Char('p') => {
-                        match catalog::pull_feeds() {
-                            Ok(r) => {
-                                self.catalog = catalog::list_all().unwrap_or_default();
-                                self.set_selected(0);
-                                self.set_msg(format!(
-                                    "feeds pulled · {} plugins from {} feed(s)",
-                                    r.plugins, r.feeds
-                                ));
-                            }
-                            Err(e) => self.set_msg(format!("error: {e}")),
+                    KeyCode::Char('f') | KeyCode::Char('p') => match catalog::pull_feeds() {
+                        Ok(r) => {
+                            self.catalog = catalog::list_all().unwrap_or_default();
+                            self.set_selected(0);
+                            self.set_msg(format!(
+                                "feeds pulled · {} plugins from {} feed(s)",
+                                r.plugins, r.feeds
+                            ));
                         }
-                    }
+                        Err(e) => self.set_msg(format!("error: {e}")),
+                    },
                     _ => {}
                 }
                 return;
@@ -332,10 +324,7 @@ impl App {
                     KeyCode::Esc => self.close_overlay(),
                     KeyCode::Char('c') => {
                         let path = path.clone();
-                        self.open_confirm(
-                            "Clear this log?".into(),
-                            ConfirmAction::ClearLog(path),
-                        );
+                        self.open_confirm("Clear this log?".into(), ConfirmAction::ClearLog(path));
                     }
                     KeyCode::Down | KeyCode::Char('j') => self.move_sel(1),
                     KeyCode::Up | KeyCode::Char('k') => self.move_sel(-1),
@@ -410,7 +399,10 @@ impl App {
                 }
             }
             KeyCode::Char('R') => {
-                self.open_confirm("Reload core rice services?".into(), ConfirmAction::ReloadRice);
+                self.open_confirm(
+                    "Reload core rice services?".into(),
+                    ConfirmAction::ReloadRice,
+                );
             }
             KeyCode::Char('e') | KeyCode::Char('E') if self.tab == Tab::Configs => {
                 let indices = self.filtered_indices();
@@ -488,10 +480,60 @@ impl App {
             KeyCode::Char('a') if self.tab == Tab::Packages => {
                 self.overlay = Overlay::Prompt {
                     kind: PromptKind::PkgAny,
-                    title: "brew install (name or cask:name)".into(),
+                    title: "brew install (+track)".into(),
                     buffer: String::new(),
                 };
-                self.set_msg("package name · Enter install · Esc");
+                self.set_msg("ripgrep | cask:firefox · Enter · Esc");
+            }
+            KeyCode::Char('t') if self.tab == Tab::Packages => {
+                self.open_pkg_track_prompt();
+            }
+            KeyCode::Char('x') if self.tab == Tab::Packages => {
+                let indices = self.filtered_indices();
+                if let Some(&real) = indices.get(self.selected()) {
+                    if let Some(pkg) = self.packages.get(real) {
+                        let name = pkg.name.clone();
+                        let in_user = crate::core::user_manifest::load_overlay()
+                            .map(|o| o.packages.iter().any(|p| p.name == name))
+                            .unwrap_or(false);
+                        if in_user {
+                            self.open_confirm(
+                                format!("Untrack `{name}` from user.toml?"),
+                                ConfirmAction::PkgUntrack { name, force: false },
+                            );
+                        } else {
+                            self.open_confirm(
+                                format!("Hide shipped `{name}` from lists?"),
+                                ConfirmAction::PkgUntrack { name, force: true },
+                            );
+                        }
+                    }
+                }
+            }
+            KeyCode::Char('a') if self.tab == Tab::Configs => {
+                self.open_config_add_prompt();
+            }
+            KeyCode::Char('x') if self.tab == Tab::Configs => {
+                let indices = self.filtered_indices();
+                if let Some(&real) = indices.get(self.selected()) {
+                    if let Some(cfg) = self.configs.get(real) {
+                        let id = cfg.id.clone();
+                        let in_user = crate::core::user_manifest::load_overlay()
+                            .map(|o| o.configs.iter().any(|c| c.id == id))
+                            .unwrap_or(false);
+                        if in_user {
+                            self.open_confirm(
+                                format!("Untrack config `{id}` from user.toml?"),
+                                ConfirmAction::ConfigUntrack { id, force: false },
+                            );
+                        } else {
+                            self.open_confirm(
+                                format!("Hide shipped config `{id}` from lists?"),
+                                ConfirmAction::ConfigUntrack { id, force: true },
+                            );
+                        }
+                    }
+                }
             }
             KeyCode::Char('s') if self.tab == Tab::Packages => {
                 self.open_pkg_search_prompt();

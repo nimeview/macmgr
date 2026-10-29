@@ -17,9 +17,23 @@ pub enum Commands {
     /// Launch interactive TUI
     Tui,
     /// Show service and rice status
-    Status,
+    Status {
+        #[arg(long)]
+        json: bool,
+    },
     /// Diagnose the rice installation
-    Doctor,
+    Doctor {
+        #[arg(long)]
+        json: bool,
+    },
+    /// First-run wizard: seed shell/ → install core → doctor
+    Setup {
+        #[arg(long)]
+        yes: bool,
+        /// Overwrite existing rice .config from shell/
+        #[arg(long)]
+        force: bool,
+    },
     /// Install the rice (core services or full stack)
     Install {
         #[arg(long, default_value_t = InstallScope::Core)]
@@ -33,6 +47,27 @@ pub enum Commands {
         keep_configs: bool,
         #[arg(long)]
         yes: bool,
+    },
+    /// Full wipe: stop services, brew uninstall rice packages, delete LIVE/rice/macmgr data
+    Purge {
+        /// Required confirmation phrase must be typed unless --yes
+        #[arg(long)]
+        yes: bool,
+        /// Also `cargo uninstall macmgr` / remove binary
+        #[arg(long)]
+        remove_cli: bool,
+        /// Keep brew packages (only stop services + delete configs/data)
+        #[arg(long)]
+        keep_packages: bool,
+        /// Keep LIVE ~/.config paths
+        #[arg(long)]
+        keep_live: bool,
+        /// Keep My rice mirror
+        #[arg(long)]
+        keep_rice: bool,
+        /// Keep macmgr Application Support / snapshots / user.toml
+        #[arg(long)]
+        keep_data: bool,
     },
     /// Manage brew services (yabai/skhd/sketchybar/borders)
     Service {
@@ -49,7 +84,7 @@ pub enum Commands {
         #[command(subcommand)]
         action: ConfigCmd,
     },
-/// Rice mirror (LIVE ↔ My rice) and service reload
+    /// Rice mirror (LIVE ↔ My rice) and service reload
     Rice {
         #[command(subcommand)]
         action: RiceCmd,
@@ -137,6 +172,8 @@ pub enum Commands {
     Tips,
     /// Install macmgr itself into cargo bin + copy manifest
     SelfInstall,
+    /// How to update macmgr (releases / brew / source)
+    SelfUpdate,
 }
 
 #[derive(Debug, Clone, ValueEnum, Default)]
@@ -158,15 +195,9 @@ impl std::fmt::Display for InstallScope {
 #[derive(Debug, Subcommand)]
 pub enum ServiceCmd {
     List,
-    Start {
-        name: String,
-    },
-    Stop {
-        name: String,
-    },
-    Restart {
-        name: String,
-    },
+    Start { name: String },
+    Stop { name: String },
+    Restart { name: String },
 }
 
 #[derive(Debug, Subcommand)]
@@ -177,6 +208,21 @@ pub enum PkgCmd {
     },
     Install {
         name: String,
+    },
+    /// Track package in user.toml (manifest overlay)
+    Add {
+        /// `ripgrep` or `cask:firefox`
+        name: String,
+        /// Also run brew install
+        #[arg(long)]
+        install: bool,
+    },
+    /// Remove from user.toml (or hide shipped with --force)
+    Remove {
+        name: String,
+        /// Hide a shipped/base package from lists
+        #[arg(long)]
+        force: bool,
     },
     Upgrade {
         name: Option<String>,
@@ -206,6 +252,21 @@ pub enum ConfigCmd {
     /// Reveal LIVE config in Finder
     Open {
         id: String,
+    },
+    /// Track LIVE path in user.toml
+    Add {
+        /// `nvim ~/.config/nvim` or just `~/.config/helix`
+        #[arg(required = true, num_args = 1..=2)]
+        spec: Vec<String>,
+        /// Force kind: file | dir
+        #[arg(long)]
+        kind: Option<String>,
+    },
+    /// Remove from user.toml (or hide shipped with --force)
+    Remove {
+        id: String,
+        #[arg(long)]
+        force: bool,
     },
     Backup,
     Restore {
@@ -269,9 +330,7 @@ pub enum RiceCmd {
 #[derive(Debug, Subcommand)]
 pub enum PresetCmd {
     List,
-    Apply {
-        id: String,
-    },
+    Apply { id: String },
 }
 
 #[derive(Debug, Subcommand)]
@@ -332,9 +391,7 @@ pub enum PluginCmd {
         reload: bool,
     },
     /// Edit plugin source in $EDITOR
-    Edit {
-        id: String,
-    },
+    Edit { id: String },
     /// Reload sketchybar only
     Reload,
 }
@@ -493,5 +550,3 @@ pub enum RulesCmd {
         manage_off: bool,
     },
 }
-
-

@@ -1,0 +1,19 @@
+# Notices
+
+macmgr is MIT-licensed (see LICENSE).
+
+## Third-party / inspiration
+
+- **yabai** — koekeishiya (koekeishiya/yabai), MIT
+- **skhd** — koekeishiya (koekeishiya/skhd), MIT
+- **SketchyBar** — FelixKratz (FelixKratz/SketchyBar), GPL-3.0
+- **borders** — FelixKratz (FelixKratz/JankyBorders)
+- SketchyBar Lua helpers / app icons patterns inspired by
+  [FelixKratz/dotfiles](https://github.com/FelixKratz/dotfiles) (check upstream
+  license before redistributing large copies of their scripts)
+
+macmgr itself does not bundle yabai/skhd/SketchyBar binaries; it installs them
+via Homebrew taps when you run `macmgr install` / `macmgr setup`.
+
+The `shell/` starter snapshot is an opinionated config pack maintained for
+macmgr demos. Review and adapt before using on a daily driver.

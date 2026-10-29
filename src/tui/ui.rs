@@ -44,11 +44,14 @@ fn draw_toasts(f: &mut Frame, app: &App, area: Rect) {
     if app.toasts.is_empty() {
         return;
     }
-    let height = (app.toasts.len() as u16).saturating_mul(1).saturating_add(2).min(area.height);
+    let height = (app.toasts.len() as u16)
+        .saturating_mul(1)
+        .saturating_add(2)
+        .min(area.height);
     if height < 2 {
         return;
     }
-    let width = area.width.min(72).max(20);
+    let width = area.width.clamp(20, 72);
     let x = area.x + area.width.saturating_sub(width).saturating_sub(1);
     let y = area.y + 1;
     let toast_area = Rect {
@@ -68,7 +71,10 @@ fn draw_toasts(f: &mut Frame, app: &App, area: Rect) {
                 StatusKind::Info => Color::Yellow,
             };
             Line::from(Span::styled(
-                format!(" {} ", truncate_chars(&t.text, (width as usize).saturating_sub(2))),
+                format!(
+                    " {} ",
+                    truncate_chars(&t.text, (width as usize).saturating_sub(2))
+                ),
                 Style::default().fg(color),
             ))
         })
@@ -90,10 +96,7 @@ fn draw_tabs(f: &mut Frame, app: &App, area: Rect) {
         .enumerate()
         .map(|(i, t)| Line::from(format!(" {}/{} ", i + 1, t.title())))
         .collect();
-    let idx = Tab::all()
-        .iter()
-        .position(|t| *t == app.tab)
-        .unwrap_or(0);
+    let idx = Tab::all().iter().position(|t| *t == app.tab).unwrap_or(0);
     let watch = if app.watch.is_some() { " · WATCH" } else { "" };
     let tabs = Tabs::new(titles)
         .block(
@@ -277,10 +280,7 @@ fn row_for(app: &App, real: usize) -> (String, Style) {
                     if p.enabled { "ON " } else { "off" },
                     p.kind.as_str(),
                     p.id,
-                    p.path
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("?")
+                    p.path.file_name().and_then(|n| n.to_str()).unwrap_or("?")
                 ),
                 if p.enabled {
                     Style::default().fg(Color::Green)
@@ -320,10 +320,7 @@ fn row_for(app: &App, real: usize) -> (String, Style) {
         Tab::More => {
             let label = app.more_items[real];
             if label.starts_with("──") {
-                (
-                    format!(" {label}"),
-                    Style::default().fg(Color::DarkGray),
-                )
+                (format!(" {label}"), Style::default().fg(Color::DarkGray))
             } else {
                 (format!("  {label}"), Style::default())
             }
@@ -343,7 +340,12 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
                 Line::from("  Rice sync: Enter/p push · P pull · d diff · a/A all · i init"),
                 Line::from("  Hotkeys: Enter toggle · a add (;;) · d delete · e nano skhdrc"),
                 Line::from("  Catalog: Enter install · u git/URL · f/p pull community feeds"),
-                Line::from("  Packages: Enter install · a any · s brew search · u upgrade"),
+                Line::from(
+                    "  Packages: Enter install · a any(+track) · t track · x untrack · s search",
+                ),
+                Line::from(
+                    "  Configs: Enter/e nano · a add · x remove · s rice · o Finder · d diff",
+                ),
                 Line::from("  : command palette · toast alerts from service logs"),
                 Line::from("  More: snapshots, undo, export/import, rice sync…"),
                 Line::from("  Snapshots: Enter restore · n name · u undo · d delete"),
@@ -354,14 +356,15 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
                 )),
             ];
             f.render_widget(
-                Paragraph::new(text)
-                    .block(Block::default().borders(Borders::ALL).title(" Help · Esc/? ")),
+                Paragraph::new(text).block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(" Help · Esc/? "),
+                ),
                 area,
             );
         }
-        Overlay::Confirm {
-            message, yes, ..
-        } => {
+        Overlay::Confirm { message, yes, .. } => {
             let body = vec![
                 Line::from(""),
                 Line::from(Span::styled(
@@ -397,12 +400,16 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
                 Line::from("  Enter confirm · Esc cancel"),
             ];
             f.render_widget(
-                Paragraph::new(body)
-                    .block(Block::default().borders(Borders::ALL).title(" Input ")),
+                Paragraph::new(body).block(Block::default().borders(Borders::ALL).title(" Input ")),
                 area,
             );
         }
-        Overlay::FileBrowser { root, files, config_id, .. } => {
+        Overlay::FileBrowser {
+            root,
+            files,
+            config_id,
+            ..
+        } => {
             let items: Vec<ListItem> = files
                 .iter()
                 .map(|p| {
@@ -437,9 +444,11 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
                 .map(|l| Line::from(*l))
                 .collect();
             f.render_widget(
-                Paragraph::new(slice).block(Block::default().borders(Borders::ALL).title(
-                    format!(" {title} · {} · Esc ", path.display()),
-                )),
+                Paragraph::new(slice).block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(format!(" {title} · {} · Esc ", path.display())),
+                ),
                 area,
             );
         }
@@ -479,9 +488,7 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
             let items = super::palette::filtered(query);
             let rows: Vec<ListItem> = items
                 .iter()
-                .map(|c| {
-                    ListItem::new(format!(" {:<28} {}", c.label, c.id))
-                })
+                .map(|c| ListItem::new(format!(" {:<28} {}", c.label, c.id)))
                 .collect();
             f.render_stateful_widget(
                 List::new(rows)
@@ -521,7 +528,10 @@ fn draw_overlay_list(f: &mut Frame, app: &mut App, area: Rect) {
     let title_owned;
     let title = match &app.overlay {
         Overlay::PkgSearch { query, results } => {
-            title_owned = format!(" brew `{query}` · {} hits · Enter install · s ", results.len());
+            title_owned = format!(
+                " brew `{query}` · {} hits · Enter install · s ",
+                results.len()
+            );
             title_owned.as_str()
         }
         _ => title,
@@ -669,10 +679,7 @@ fn overlay_row(app: &App, real: usize) -> Option<(String, Style)> {
         Overlay::WallpaperPicker { files } => {
             let p = files.get(real)?;
             Some((
-                format!(
-                    " {}",
-                    p.file_name().and_then(|n| n.to_str()).unwrap_or("?")
-                ),
+                format!(" {}", p.file_name().and_then(|n| n.to_str()).unwrap_or("?")),
                 Style::default(),
             ))
         }

@@ -47,7 +47,11 @@ pub fn run(manifest: Manifest) -> Result<()> {
                     .unwrap_or("done")
                     .to_string()
             })?;
-            app.refresh_tab(false);
+            if msg.contains("tracked") {
+                app.reload_manifest();
+            } else {
+                app.refresh_tab(false);
+            }
             app.set_msg(msg);
             continue;
         }
@@ -55,7 +59,9 @@ pub fn run(manifest: Manifest) -> Result<()> {
         if event::poll(Duration::from_millis(250))? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    app.on_key(key.code, key.modifiers);
+                    // ЙЦУКЕН → QWERTY so hotkeys work on RU layout
+                    let code = super::layout_keys::normalize_keycode(key.code);
+                    app.on_key(code, key.modifiers);
                 }
             }
         }

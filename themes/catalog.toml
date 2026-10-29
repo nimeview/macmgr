@@ -1,54 +1,54 @@
 [[themes]]
 id = "current"
 label = "Current (backup snapshot)"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/current_colors.lua"
+colors_file = "current_colors.lua"
 
 [[themes]]
 id = "dim"
-label = "Dim / low contrast"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/dim_colors.lua"
+label = "Catppuccin Macchiato (dim)"
+colors_file = "dim_colors.lua"
 
 [[themes]]
 id = "bright"
-label = "Bright accents"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/bright_colors.lua"
+label = "Catppuccin Mocha (bright)"
+colors_file = "bright_colors.lua"
 
 [[themes]]
 id = "latte"
 label = "Catppuccin Latte (light)"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/latte_colors.lua"
+colors_file = "latte_colors.lua"
 
 [[themes]]
 id = "tokyo"
 label = "Tokyo Night"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/tokyo_colors.lua"
+colors_file = "tokyo_colors.lua"
 
 [[themes]]
 id = "gruvbox"
 label = "Gruvbox Dark"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/gruvbox_colors.lua"
+colors_file = "gruvbox_colors.lua"
 
 [[themes]]
 id = "nord"
 label = "Nord"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/nord_colors.lua"
+colors_file = "nord_colors.lua"
 
 [[themes]]
 id = "rosepine"
 label = "Rosé Pine"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/rosepine_colors.lua"
+colors_file = "rosepine_colors.lua"
 
 [[themes]]
 id = "dracula"
 label = "Dracula"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/dracula_colors.lua"
+colors_file = "dracula_colors.lua"
 
 [[themes]]
 id = "solarized"
 label = "Solarized Dark"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/solarized_colors.lua"
+colors_file = "solarized_colors.lua"
 
 [[themes]]
 id = "monokai"
 label = "Monokai"
-colors_file = "/Users/arturpanan/Library/Application Support/dev.macmgr.macmgr/themes/monokai_colors.lua"
+colors_file = "monokai_colors.lua"

@@ -130,9 +130,8 @@ pub fn create(
         host: hostname(),
         configs,
     };
-    let toml = toml::to_string_pretty(&meta).unwrap_or_else(|_| {
-        format!("id = \"{}\"\nlabel = \"{}\"\n", meta.id, meta.label)
-    });
+    let toml = toml::to_string_pretty(&meta)
+        .unwrap_or_else(|_| format!("id = \"{}\"\nlabel = \"{}\"\n", meta.id, meta.label));
     fs::write(dest.join(META_FILE), toml)?;
     // legacy readable note
     fs::write(
@@ -183,7 +182,10 @@ fn save_undo_stack(stack: &[String]) -> Result<()> {
     if let Some(parent) = path.parent() {
         ensure_dir(parent)?;
     }
-    fs::write(path, stack.join("\n") + if stack.is_empty() { "" } else { "\n" })?;
+    fs::write(
+        path,
+        stack.join("\n") + if stack.is_empty() { "" } else { "\n" },
+    )?;
     Ok(())
 }
 
@@ -303,8 +305,7 @@ pub fn restore(manifest: &Manifest, id: &str) -> Result<SnapshotInfo> {
 
 pub fn delete(id: &str) -> Result<()> {
     let info = get(id)?;
-    fs::remove_dir_all(&info.path)
-        .with_context(|| format!("deleting {}", info.path.display()))?;
+    fs::remove_dir_all(&info.path).with_context(|| format!("deleting {}", info.path.display()))?;
     let mut stack = load_undo_stack();
     stack.retain(|x| x != &info.meta.id);
     let _ = save_undo_stack(&stack);

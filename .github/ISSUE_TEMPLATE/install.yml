@@ -1,0 +1,32 @@
+name: Install failure
+description: setup / install / doctor failed on a fresh or existing Mac
+labels: ["install"]
+body:
+  - type: textarea
+    id: cmd
+    attributes:
+      label: Command you ran
+      placeholder: macmgr setup --yes
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Full terminal output
+    validations:
+      required: true
+  - type: input
+    id: arch
+    attributes:
+      label: Chip
+      description: "Intel or Apple Silicon"
+    validations:
+      required: true
+  - type: checkboxes
+    id: sip
+    attributes:
+      label: SIP / Accessibility
+      options:
+        - label: I read docs/INSTALL.md
+        - label: Accessibility granted to yabai and skhd
+        - label: SIP still fully enabled (OK to note)

@@ -120,9 +120,7 @@ pub fn add(manifest: &Manifest, app_pattern: &str, manage_off: bool) -> Result<(
         raw.push('\n');
     }
     let line = if manage_off {
-        format!(
-            "yabai -m rule --add app=\"^{app_pattern}$\" manage=off\n"
-        )
+        format!("yabai -m rule --add app=\"^{app_pattern}$\" manage=off\n")
     } else {
         format!("yabai -m rule --add app=\"^{app_pattern}$\"\n")
     };
@@ -137,11 +135,7 @@ pub fn format_table(rules: &[YabaiRule]) -> String {
     out.push('\n');
     for r in rules {
         let mark = if r.enabled { "ON " } else { "off" };
-        out.push_str(&format!(
-            "  {mark}  L{:<4} {}\n",
-            r.index + 1,
-            r.summary
-        ));
+        out.push_str(&format!("  {mark}  L{:<4} {}\n", r.index + 1, r.summary));
     }
     out.push_str(&format!("\n{} rules\n", rules.len()));
     out

@@ -59,8 +59,8 @@ impl Tab {
         match self {
             Tab::Dashboard => "? help · : palette · 1-8 tabs · r refresh",
             Tab::Services => "Enter toggle · R reload rice",
-            Tab::Packages => "Enter install · a any · s search brew · u upgrade · / filter",
-            Tab::Configs => "Enter/e nano · s rice sync · o Finder · d diff · / filter",
+            Tab::Packages => "Enter install · a any · t track · x untrack · s search · u upgrade",
+            Tab::Configs => "Enter/e nano · a add · x remove · s rice · o Finder · d diff",
             Tab::Plugins => "Enter toggle · e nano · a add · i catalog · / filter",
             Tab::Logs => "Enter view · / filter",
             Tab::Doctor => "Enter jump · r refresh",
@@ -92,8 +92,12 @@ pub enum PromptKind {
     CatalogFromUrl,
     /// Any brew package: `ripgrep` or `cask:firefox`
     PkgAny,
+    /// Track only (no install): same spec as PkgAny
+    PkgTrack,
     /// Brew search query → opens PkgSearch overlay
     PkgSearchQuery,
+    /// Config track: `id path` or bare path
+    ConfigAdd,
 }
 
 #[derive(Debug, Clone)]
@@ -101,8 +105,11 @@ pub enum ConfirmAction {
     PkgInstall(String),
     PkgUninstall(String),
     PkgUpgrade(String),
+    PkgUntrack { name: String, force: bool },
+    ConfigUntrack { id: String, force: bool },
     InstallCore,
     InstallFull,
+    PurgeEnv,
     ReloadRice,
     RestoreConfigs,
     RestoreSnapshot(String),
@@ -538,14 +545,12 @@ impl App {
                 let items = super::palette::filtered(query);
                 (0..items.len()).collect()
             }
-            Overlay::PkgSearch { results, .. } => {
-                results
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, h)| match_q(&h.name) || match_q(&h.kind))
-                    .map(|(i, _)| i)
-                    .collect()
-            }
+            Overlay::PkgSearch { results, .. } => results
+                .iter()
+                .enumerate()
+                .filter(|(_, h)| match_q(&h.name) || match_q(&h.kind))
+                .map(|(i, _)| i)
+                .collect(),
             Overlay::WallpaperPicker { files } => files
                 .iter()
                 .enumerate()

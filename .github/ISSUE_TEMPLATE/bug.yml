@@ -1,0 +1,38 @@
+name: Bug report
+description: Something broken in macmgr or the starter shell
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. For install failures use the **Install failure** template.
+  - type: input
+    id: version
+    attributes:
+      label: macmgr version
+      placeholder: "macmgr --version"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "13.7 / 14.x / 15.x"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: `macmgr doctor` output (optional)

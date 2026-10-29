@@ -270,21 +270,11 @@ pub fn add(manifest: &Manifest, name: &str, kind: PluginKind) -> Result<PathBuf>
     let (path, require_mod, init) = match kind {
         PluginKind::Item => {
             let path = root.join("items").join(format!("{name}.lua"));
-            (
-                path,
-                format!("items.{name}"),
-                items_init(&root),
-            )
+            (path, format!("items.{name}"), items_init(&root))
         }
         PluginKind::Widget => {
-            let path = root
-                .join("items/widgets")
-                .join(format!("{name}.lua"));
-            (
-                path,
-                format!("items.widgets.{name}"),
-                widgets_init(&root),
-            )
+            let path = root.join("items/widgets").join(format!("{name}.lua"));
+            (path, format!("items.widgets.{name}"), widgets_init(&root))
         }
     };
 
@@ -371,11 +361,7 @@ pub fn reload_bar_fast(manifest: &Manifest) -> Result<()> {
     reload_bar_inner(manifest, None, false)
 }
 
-fn reload_bar_inner(
-    manifest: &Manifest,
-    changed: Option<&Path>,
-    safe: bool,
-) -> Result<()> {
+fn reload_bar_inner(manifest: &Manifest, changed: Option<&Path>, safe: bool) -> Result<()> {
     crate::core::validate::before_reload(manifest, changed)?;
 
     if safe {
@@ -427,11 +413,7 @@ fn wait_for_sketchybar(timeout_ms: u64) -> bool {
 
 fn sanitize_name(name: &str) -> Result<String> {
     let name = name.trim().to_lowercase().replace(' ', "_");
-    if name.is_empty()
-        || !name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_')
-    {
+    if name.is_empty() || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
         return Err(anyhow!(
             "invalid plugin name `{name}` (use letters, digits, _)"
         ));

@@ -6,11 +6,20 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::paths::{config_dir, expand_tilde};
 
+fn default_manifest_version() -> u32 {
+    1
+}
+
+const SUPPORTED_MANIFEST_VERSION: u32 = 1;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Manifest {
     pub name: String,
     #[serde(default)]
     pub version: String,
+    /// Schema version for forward compatibility (default 1).
+    #[serde(default = "default_manifest_version")]
+    pub manifest_version: u32,
     #[serde(default)]
     pub description: String,
     /// My rice mirror (LIVE ↔ selective sync). Preferred over legacy `dotfiles`.
@@ -210,9 +219,17 @@ impl Manifest {
     pub fn from_file(path: &PathBuf) -> Result<Self> {
         let raw = fs::read_to_string(path)
             .with_context(|| format!("reading manifest {}", path.display()))?;
-        let manifest: Manifest = toml::from_str(&raw)
-            .with_context(|| format!("parsing manifest {}", path.display()))?;
-        Ok(manifest)
+        let manifest: Manifest =
+            toml::from_str(&raw).with_context(|| format!("parsing manifest {}", path.display()))?;
+        if manifest.manifest_version > SUPPORTED_MANIFEST_VERSION {
+            anyhow::bail!(
+                "manifest_version {} is newer than supported {} — upgrade macmgr",
+                manifest.manifest_version,
+                SUPPORTED_MANIFEST_VERSION
+            );
+        }
+        // Merge ~/.config/macmgr/user.toml (packages/configs added from TUI/CLI)
+        crate::core::user_manifest::apply_overlay(manifest)
     }
 
     /// Resolved rice config (from `[rice]` or legacy `[dotfiles]` mapped in).
@@ -289,9 +306,7 @@ impl Manifest {
     }
 
     pub fn find_service(&self, id: &str) -> Option<&ServiceDef> {
-        self.services
-            .iter()
-            .find(|s| s.id == id || s.brew == id)
+        self.services.iter().find(|s| s.id == id || s.brew == id)
     }
 
     pub fn find_package(&self, name: &str) -> Option<&PackageDef> {

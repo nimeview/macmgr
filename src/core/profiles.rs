@@ -78,8 +78,8 @@ pub fn list() -> Result<Vec<Profile>> {
             continue;
         }
         let raw = fs::read_to_string(&path)?;
-        let mut p: Profile = toml::from_str(&raw)
-            .with_context(|| format!("parse {}", path.display()))?;
+        let mut p: Profile =
+            toml::from_str(&raw).with_context(|| format!("parse {}", path.display()))?;
         if p.id.is_empty() {
             p.id = path
                 .file_stem()

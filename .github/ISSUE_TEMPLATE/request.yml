@@ -1,0 +1,19 @@
+name: Plugin / theme request
+description: Suggest a SketchyBar plugin, theme, or catalog feed
+labels: ["enhancement"]
+body:
+  - type: input
+    id: what
+    attributes:
+      label: What do you want added?
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: Links / license
+      description: Upstream URL and license if known
+  - type: markdown
+    attributes:
+      value: |
+        Community feeds must use public URLs only. See CONTRIBUTING.md.

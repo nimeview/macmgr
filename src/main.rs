@@ -7,8 +7,9 @@ use anyhow::Result;
 use clap::Parser;
 
 use cli::{
-    CatalogCmd, Cli, Commands, ConfigCmd, HotkeysCmd, InstallScope, PkgCmd, PluginCmd, PluginKindArg,
-    PresetCmd, ProfileCmd, RiceCmd, RulesCmd, ServiceCmd, SnapshotCmd, ThemeCmd, WallpaperCmd,
+    CatalogCmd, Cli, Commands, ConfigCmd, HotkeysCmd, InstallScope, PkgCmd, PluginCmd,
+    PluginKindArg, PresetCmd, ProfileCmd, RiceCmd, RulesCmd, ServiceCmd, SnapshotCmd, ThemeCmd,
+    WallpaperCmd,
 };
 use core::brew;
 use core::catalog;
@@ -19,14 +20,16 @@ use core::hotkeys;
 use core::install::{self, InstallMode};
 use core::manifest::Manifest;
 use core::pack;
-use core::rice;
 use core::plugins::{self, PluginKind};
 use core::presets;
 use core::profiles;
+use core::rice;
 use core::rules;
 use core::service;
+use core::setup;
 use core::snapshot::{self, SnapshotKind};
 use core::themes;
+use core::user_manifest;
 use core::wallpaper;
 use core::watch;
 use util::confirm::confirm;
@@ -40,15 +43,35 @@ fn main() -> Result<()> {
         install::self_install()?;
         return Ok(());
     }
+    if matches!(command, Commands::SelfUpdate) {
+        core::update::check_latest()?;
+        return Ok(());
+    }
 
     let manifest = Manifest::load()?;
 
     match command {
         Commands::Tui => tui::run(manifest)?,
-        Commands::Status => cmd_status(&manifest)?,
-        Commands::Doctor => {
+        Commands::Status { json } => cmd_status(&manifest, json)?,
+        Commands::Doctor { json } => {
             let checks = doctor::run_checks(&manifest);
-            print!("{}", doctor::format_report(&checks));
+            if json {
+                println!("{}", doctor::format_json(&checks)?);
+            } else {
+                print!("{}", doctor::format_report(&checks));
+            }
+        }
+        Commands::Setup { yes, force } => {
+            if !yes
+                && !confirm(
+                    "Run first-time setup (seed shell/, brew core, plant configs)?",
+                    false,
+                )?
+            {
+                println!("aborted");
+                return Ok(());
+            }
+            setup::run(&manifest, yes, force)?;
         }
         Commands::Install { scope, yes } => {
             let mode = match scope {
@@ -74,6 +97,42 @@ fn main() -> Result<()> {
                 return Ok(());
             }
             install::uninstall(&manifest, keep_configs, yes)?;
+        }
+        Commands::Purge {
+            yes,
+            remove_cli,
+            keep_packages,
+            keep_live,
+            keep_rice,
+            keep_data,
+        } => {
+            println!(
+                "WARNING: This permanently removes the tiling rice environment:\n\
+                 - stop yabai/skhd/sketchybar/borders\n\
+                 - brew uninstall packages from the manifest\n\
+                 - delete LIVE configs, My rice, snapshots, macmgr data\n"
+            );
+            if yes {
+                // still require an explicit --yes; no second prompt
+            } else {
+                print!("Type PURGE to confirm: ");
+                use std::io::{stdin, stdout, Write};
+                let _ = stdout().flush();
+                let mut buf = String::new();
+                stdin().read_line(&mut buf)?;
+                if buf.trim() != "PURGE" {
+                    println!("aborted");
+                    return Ok(());
+                }
+            }
+            let opts = install::PurgeOptions {
+                remove_packages: !keep_packages,
+                remove_live_configs: !keep_live,
+                remove_rice: !keep_rice,
+                remove_macmgr_data: !keep_data,
+                remove_cli,
+            };
+            install::purge(&manifest, &opts)?;
         }
         Commands::Service { action } => cmd_service(&manifest, action)?,
         Commands::Pkg { action } => cmd_pkg(&manifest, action)?,
@@ -105,12 +164,7 @@ fn main() -> Result<()> {
                     println!("deleted #{n}");
                 }
                 HotkeysCmd::Set { n, keys, action } => {
-                    hotkeys::set(
-                        &manifest,
-                        n,
-                        keys.as_deref(),
-                        action.as_deref(),
-                    )?;
+                    hotkeys::set(&manifest, n, keys.as_deref(), action.as_deref())?;
                     println!("updated #{n}");
                 }
             }
@@ -126,8 +180,7 @@ fn main() -> Result<()> {
                         s.path.display()
                     );
                 }
-            } else if let Some(src) = sources.iter().find(|s| s.id == id || s.label.contains(&id))
-            {
+            } else if let Some(src) = sources.iter().find(|s| s.id == id || s.label.contains(&id)) {
                 println!("# {} ({})", src.label, src.path.display());
                 println!("{}", core::logs::read_tail(&src.path, lines));
             } else {
@@ -161,11 +214,7 @@ fn main() -> Result<()> {
                 println!("profile {id} applied");
             }
             ProfileCmd::Save { id, label } => {
-                let label = if label.is_empty() {
-                    id.clone()
-                } else {
-                    label
-                };
+                let label = if label.is_empty() { id.clone() } else { label };
                 let p = profiles::save_from_current(&manifest, &id, &label)?;
                 println!("saved {}", p.display());
             }
@@ -200,14 +249,8 @@ fn main() -> Result<()> {
                 path,
                 reload,
             } => {
-                let dest = catalog::install_url(
-                    &manifest,
-                    &url,
-                    &id,
-                    &kind,
-                    path.as_deref(),
-                    reload,
-                )?;
+                let dest =
+                    catalog::install_url(&manifest, &url, &id, &kind, path.as_deref(), reload)?;
                 println!("installed → {}", dest.display());
             }
             CatalogCmd::Add {
@@ -306,16 +349,8 @@ fn main() -> Result<()> {
             let action = action.unwrap_or(SnapshotCmd::Create { name: None });
             match action {
                 SnapshotCmd::Create { name } => {
-                    let info = snapshot::create(
-                        &manifest,
-                        name.as_deref(),
-                        SnapshotKind::Manual,
-                    )?;
-                    println!(
-                        "snapshot → {} ({})",
-                        info.path.display(),
-                        info.meta.label
-                    );
+                    let info = snapshot::create(&manifest, name.as_deref(), SnapshotKind::Manual)?;
+                    println!("snapshot → {} ({})", info.path.display(), info.meta.label);
                 }
                 SnapshotCmd::List => {
                     for s in snapshot::list()? {
@@ -352,10 +387,7 @@ fn main() -> Result<()> {
             }
         }
         Commands::Export { path } => {
-            let dest = pack::export(
-                &manifest,
-                path.as_deref().map(std::path::Path::new),
-            )?;
+            let dest = pack::export(&manifest, path.as_deref().map(std::path::Path::new))?;
             println!("export → {}", dest.display());
         }
         Commands::Import {
@@ -387,12 +419,39 @@ fn main() -> Result<()> {
         }
         Commands::Tips => print!("{}", extras::tips()),
         Commands::SelfInstall => unreachable!(),
+        Commands::SelfUpdate => unreachable!(),
     }
 
     Ok(())
 }
 
-fn cmd_status(manifest: &Manifest) -> Result<()> {
+fn cmd_status(manifest: &Manifest, json: bool) -> Result<()> {
+    if json {
+        let services: Vec<_> = service::list_statuses(manifest)
+            .into_iter()
+            .map(|s| {
+                serde_json::json!({
+                    "id": s.id,
+                    "running": s.running,
+                    "installed": s.installed,
+                    "core": s.core,
+                })
+            })
+            .collect();
+        let cfgs = config::list_configs(manifest);
+        let body = serde_json::json!({
+            "name": manifest.name,
+            "version": manifest.version,
+            "manifest_version": manifest.manifest_version,
+            "services": services,
+            "brew_outdated": brew::outdated_list(),
+            "configs_present": cfgs.iter().filter(|c| c.exists).count(),
+            "configs_total": cfgs.len(),
+            "rice": manifest.rice_path().display().to_string(),
+        });
+        println!("{}", serde_json::to_string_pretty(&body)?);
+        return Ok(());
+    }
     println!("{} v{}", manifest.name, manifest.version);
     println!("{}", manifest.description);
     println!();
@@ -490,6 +549,26 @@ fn cmd_pkg(manifest: &Manifest, action: PkgCmd) -> Result<()> {
                 println!("installed {kind} {n}");
             }
         }
+        PkgCmd::Add { name, install } => {
+            let pkg = user_manifest::track_package(&name)?;
+            println!(
+                "tracked {} {} → {}",
+                pkg.kind,
+                pkg.name,
+                user_manifest::user_overlay_path().display()
+            );
+            if install {
+                brew::install_package(&pkg)?;
+                println!("installed {}", pkg.name);
+            }
+        }
+        PkgCmd::Remove { name, force } => {
+            user_manifest::untrack_package(&name, force)?;
+            println!(
+                "untracked {name} → {}",
+                user_manifest::user_overlay_path().display()
+            );
+        }
         PkgCmd::Upgrade { name } => {
             if let Some(name) = name {
                 let kind = manifest
@@ -553,12 +632,32 @@ fn cmd_config(manifest: &Manifest, action: ConfigCmd) -> Result<()> {
         }
         ConfigCmd::Edit { id } => config::edit(manifest, &id)?,
         ConfigCmd::Open { id } => config::open(manifest, &id)?,
+        ConfigCmd::Add { spec, kind } => {
+            let joined = spec.join(" ");
+            let (id, path) = user_manifest::parse_config_add_spec(&joined)?;
+            let cfg = user_manifest::track_config(manifest, &id, &path, kind.as_deref())?;
+            println!(
+                "tracked config {} → {} (rice {})",
+                cfg.id, cfg.path, cfg.repo_path
+            );
+            println!("overlay {}", user_manifest::user_overlay_path().display());
+        }
+        ConfigCmd::Remove { id, force } => {
+            user_manifest::untrack_config(&id, force)?;
+            println!(
+                "untracked config {id} → {}",
+                user_manifest::user_overlay_path().display()
+            );
+        }
         ConfigCmd::Backup => {
             let dest = config::backup_all(manifest)?;
             println!("backup written to {}", dest.display());
         }
         ConfigCmd::Restore { yes } => {
-            if !confirm("Restore latest config backup (overwrites live configs)?", yes)? {
+            if !confirm(
+                "Restore latest config backup (overwrites live configs)?",
+                yes,
+            )? {
                 println!("aborted");
                 return Ok(());
             }
@@ -670,9 +769,7 @@ fn cmd_wallpaper(manifest: &Manifest, action: WallpaperCmd) -> Result<()> {
             for (i, p) in wallpaper::list(manifest)?.iter().enumerate() {
                 println!(
                     "{i:>3}  {}",
-                    p.file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("?")
+                    p.file_name().and_then(|n| n.to_str()).unwrap_or("?")
                 );
             }
         }
@@ -748,4 +845,3 @@ fn cmd_plugin(manifest: &Manifest, action: PluginCmd) -> Result<()> {
     }
     Ok(())
 }
-

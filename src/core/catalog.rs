@@ -238,8 +238,8 @@ pub fn pull_feeds() -> Result<PullReport> {
 
     for feed in &feeds {
         let body = fetch_feed_body(&feed.url)?;
-        let cat: CatalogFile = toml::from_str(&body)
-            .with_context(|| format!("parse feed `{}`", feed.id))?;
+        let cat: CatalogFile =
+            toml::from_str(&body).with_context(|| format!("parse feed `{}`", feed.id))?;
         for e in cat.plugins {
             if seen.insert(e.id.clone()) {
                 merged.plugins.push(e);
@@ -264,13 +264,11 @@ fn fetch_feed_body(url: &str) -> Result<String> {
     }
     if let Some(path) = url.strip_prefix("file:") {
         let p = expand_feed_path(path);
-        return fs::read_to_string(&p)
-            .with_context(|| format!("read feed file {}", p.display()));
+        return fs::read_to_string(&p).with_context(|| format!("read feed file {}", p.display()));
     }
     if url.starts_with('/') || url.starts_with('~') {
         let p = expand_feed_path(url);
-        return fs::read_to_string(&p)
-            .with_context(|| format!("read feed file {}", p.display()));
+        return fs::read_to_string(&p).with_context(|| format!("read feed file {}", p.display()));
     }
     if url.starts_with("http://") || url.starts_with("https://") {
         let tmp = std::env::temp_dir().join(format!(
@@ -361,8 +359,7 @@ fn install_entry(manifest: &Manifest, entry: &CatalogEntry, reload: bool) -> Res
         // treat as local path?
         let local = PathBuf::from(source);
         if local.is_file() {
-            fs::copy(&local, &dest)
-                .with_context(|| format!("copy {}", local.display()))?;
+            fs::copy(&local, &dest).with_context(|| format!("copy {}", local.display()))?;
         } else {
             bail!("unsupported catalog source: {source}");
         }
@@ -416,10 +413,8 @@ fn normalize_git_url(source: &str) -> String {
 }
 
 fn download_raw(url: &str, dest: &Path) -> Result<()> {
-    let tmp = std::env::temp_dir().join(format!(
-        "macmgr-dl-{}",
-        Local::now().format("%Y%m%d%H%M%S")
-    ));
+    let tmp =
+        std::env::temp_dir().join(format!("macmgr-dl-{}", Local::now().format("%Y%m%d%H%M%S")));
     run_status("curl", &["-fsSL", url, "-o", tmp.to_str().unwrap_or("")])
         .with_context(|| format!("download {url}"))?;
     fs::copy(&tmp, dest)?;
@@ -477,12 +472,7 @@ fn resolve_lua_in_clone(root: &Path, subpath: Option<&str>) -> Result<PathBuf> {
     }
 
     // Prefer common sketchybar layouts
-    let guesses = [
-        "init.lua",
-        "item.lua",
-        "widget.lua",
-        "plugin.lua",
-    ];
+    let guesses = ["init.lua", "item.lua", "widget.lua", "plugin.lua"];
     for g in guesses {
         let c = root.join(g);
         if c.is_file() {

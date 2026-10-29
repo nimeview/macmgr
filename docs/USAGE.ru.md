@@ -135,11 +135,14 @@ macmgr rice pull sketchybar --yes   # вернуть бар из rice (с undo)
 ## Установка
 
 ```bash
-cd ~/Documents/MacOS_Manager
+cd ~/Documents/MacOS_Manager   # или git clone …
 cargo install --path .
 mkdir -p ~/.config/macmgr
 cp manifest.toml ~/.config/macmgr/manifest.toml
+macmgr setup --yes             # seed shell/ → rice → brew core → doctor
 ```
+
+Подробнее (SIP, Accessibility): [INSTALL.md](INSTALL.md) · EN: [USAGE.en.md](USAGE.en.md)
 
 Проверка:
 
@@ -147,6 +150,7 @@ cp manifest.toml ~/.config/macmgr/manifest.toml
 macmgr --version
 macmgr tips
 macmgr doctor
+macmgr doctor --json
 ```
 
 На новом Mac (после правки `REPO_URL` в скрипте):
@@ -334,8 +338,12 @@ Enter на строке — install / uninstall. `u` — upgrade выбранн�
 ```bash
 macmgr install --scope core          # ядро: taps + yabai/skhd/sketchybar/borders + конфиги
 macmgr install --scope full --yes    # + пакеты из манифеста (без optional)
+macmgr setup --yes                   # first-run: seed shell/ + install core + doctor
 macmgr uninstall --keep-configs --yes
-macmgr self-install                  # cargo install + копирует manifest в ~/.config/macmgr
+macmgr purge                     # полный снос: сервисы + brew pkgs + LIVE + rice + data
+macmgr purge --yes --remove-cli  # то же + удалить бинарник macmgr
+macmgr self-install                  # cargo install + копирует manifest
+macmgr self-update                   # подсказки по обновлению
 ```
 
 `--yes` пропускает подтверждение.

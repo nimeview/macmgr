@@ -1,12 +1,20 @@
-# Shell snapshot (v0.1)
+# Shell starter snapshot (v0.2)
 
-Pinned LIVE rice configs for first shell release:
+Portable LIVE rice configs for first-time install via `macmgr setup` /
+`macmgr install --scope core` (seeded into `~/.local/share/macmgr/rice` then
+planted to `~/.config`).
 
-- SketchyBar (center media / Yandex-friendly player, theme picker, wifi network list, 9 spaces)
+Included:
+
+- SketchyBar (spaces, media, wifi, widgets)
 - yabai / skhd / borders
-- `bin/ensure_spaces.sh` → 9 spaces
+- kitty (`kitty.conf` + theme include)
+- `bin/ensure_spaces.sh` → up to 9 yabai spaces
 
-Daily source of truth remains `~/.config/…`.  
-My rice mirror: `~/.local/share/macmgr/rice` (already `rice push` + commit).
+No absolute user paths or private remotes. Rebuild native helpers:
 
-Restore onto a machine: copy into `~/.config` or `macmgr import` a pack / `rice pull`.
+```bash
+cd shell/.config/sketchybar/helpers && make
+```
+
+Daily source of truth after install remains `~/.config/…`.

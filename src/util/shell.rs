@@ -38,10 +38,7 @@ pub fn run_status(program: &str, args: &[&str]) -> Result<()> {
         } else {
             stdout.trim().to_string()
         };
-        Err(anyhow!(
-            "`{program} {}` failed: {detail}",
-            args.join(" ")
-        ))
+        Err(anyhow!("`{program} {}` failed: {detail}", args.join(" ")))
     }
 }
 

@@ -64,8 +64,7 @@ pub fn export(manifest: &Manifest, dest: Option<&Path>) -> Result<PathBuf> {
                 expand_tilde(p.to_str().unwrap_or(""))
             };
             if p.extension().and_then(|e| e.to_str()) == Some("gz")
-                || p
-                    .file_name()
+                || p.file_name()
                     .and_then(|n| n.to_str())
                     .map(|n| n.ends_with(".tar.gz"))
                     .unwrap_or(false)
@@ -126,10 +125,7 @@ pub fn export(manifest: &Manifest, dest: Option<&Path>) -> Result<PathBuf> {
         .iter()
         .map(|p| format!("{}:{}", p.kind, p.name))
         .collect();
-    fs::write(
-        staging.join("packages.txt"),
-        packages.join("\n") + "\n",
-    )?;
+    fs::write(staging.join("packages.txt"), packages.join("\n") + "\n")?;
 
     let plugins_enabled: Vec<String> = plugins::list(manifest)
         .unwrap_or_default()

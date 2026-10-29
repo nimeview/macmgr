@@ -1,5 +1,6 @@
 name = "Arthur Rice"
 version = "1.0.0"
+manifest_version = 1
 description = "yabai + skhd + SketchyBar + borders tiling desktop rice"
 
 # My rice mirror (LIVE ↔ selective sync / publish). Not Felix upstream.

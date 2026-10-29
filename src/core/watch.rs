@@ -62,7 +62,9 @@ pub fn start(manifest: &Manifest, interval_ms: u64) -> Result<WatchHandle> {
 }
 
 fn scan_mtimes(root: &Path, into: &mut HashMap<PathBuf, SystemTime>) {
-    let walker = walkdir::WalkDir::new(root).into_iter().filter_map(|e| e.ok());
+    let walker = walkdir::WalkDir::new(root)
+        .into_iter()
+        .filter_map(|e| e.ok());
     for entry in walker {
         if !entry.file_type().is_file() {
             continue;

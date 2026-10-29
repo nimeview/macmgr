@@ -37,8 +37,15 @@ PIN / «закрепить в сборку»
 
 TUI SHORTCUTS
   :  command palette
-  s  (Pkgs) brew search · a any install
-  s  (Cfg)  rice sync
+  s  (Pkgs) brew search · a install+track · t track · x untrack
+  a  (Cfg) add config path · x remove from user.toml
+
+TRACK (user.toml overlay)
+  macmgr pkg add ripgrep
+  macmgr pkg add cask:firefox --install
+  macmgr pkg remove ripgrep
+  macmgr config add nvim ~/.config/nvim
+  macmgr config remove nvim
 
 UNDO
   macmgr snapshot create --name before
@@ -47,9 +54,10 @@ UNDO
 
 OTHER
   macmgr pkg install ripgrep | cask:firefox
+  macmgr purge --yes                 # FULL wipe env + brew pkgs (danger)
   macmgr catalog install clock --reload
   macmgr doctor / watch / export ~/Desktop/my-rice.tar.gz
-  docs: USAGE.ru.md · CHEATSHEET.ru.md
+  docs: USAGE.ru.md · CHEATSHEET.ru.md · INSTALL.md
   System Settings → Privacy → Accessibility → yabai & skhd
 "#
     .into()
