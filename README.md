@@ -29,7 +29,7 @@ change, sync and recover the setup from one TUI or CLI.
 ### TUI dashboard
 
 ```text
-┌ macmgr · Arthur Rice ──────────────────────────────────────────────────────┐
+┌ macmgr · macOS setup ──────────────────────────────────────────────────────┐
 │  1/Dash  │  2/Svc  │  3/Pkgs  │  4/Cfg  │  5/Plug  │  6/Logs  │  7/Doc  │
 ├ Dashboard ──────────────────────────────────────────────────────────────────┤
 │  Rice overview (LIVE ~/.config)                                             │
